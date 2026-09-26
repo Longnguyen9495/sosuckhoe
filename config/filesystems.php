@@ -38,6 +38,12 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/private'),
             'serve' => false, // Không phục vụ file riêng tư qua URL — ảnh phiếu chỉ tải qua API có kiểm quyền.
+            // Chủ + nhóm web (www-data) đọc/ghi, người khác không vào được. Mặc định của Flysystem là 0700,
+            // nên sau khi deploy chown sang user deploy thì PHP-FPM mất quyền ghi.
+            'permissions' => [
+                'file' => ['public' => 0660, 'private' => 0660],
+                'dir' => ['public' => 0770, 'private' => 0770],
+            ],
             'throw' => false,
             'report' => false,
         ],

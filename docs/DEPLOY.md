@@ -29,6 +29,7 @@ sudo -u rexllm npm ci --no-audit --no-fund && sudo -u rexllm npm run build
 sudo -u rexllm php artisan migrate --force
 sudo -u rexllm php artisan optimize:clear && sudo -u rexllm php artisan config:cache && sudo -u rexllm php artisan route:cache && sudo -u rexllm php artisan view:cache
 chown -R rexllm:www-data storage bootstrap/cache database && chmod 2770 database && chmod 660 database/database.sqlite
+chmod -R u+rwX,g+rwX,o-rwx storage/app/private   # ảnh phiếu: chỉ rexllm + nhóm www-data (PHP-FPM) đọc/ghi
 ```
 
 Biến `.env` mới phải thêm bằng tay, rồi chạy lại `config:cache`.
