@@ -1,0 +1,62 @@
+/* Token thiết kế Sổ Sức Khỏe — PLAN.md mục 6.3 (phong cách Snapask). */
+:root {
+  --brand: #6C4CF1;
+  --brand-2: #9A7BFF;
+  --brand-deep: #4B2FC9;
+  --brand-soft: #EFEBFF;
+  --on-brand: #FFFFFF;
+  --accent: #FFC940;
+  --accent-ink: #3A2A00;
+
+  --bg: #F5F3FB;
+  --card: #FFFFFF;
+  --card-2: #FAF9FE;
+  --ink: #1F1B2E;
+  --ink-2: #565070;
+  --muted: #7A7592;
+  --line: #E8E4F4;
+
+  --good: #16804F;
+  --good-soft: #E2F5EA;
+  --warn: #9A6200;
+  --warn-soft: #FFF3D6;
+  --bad: #C92A5E;
+  --bad-soft: #FDE6EE;
+  --info: #2A62C9;
+  --info-soft: #E5EDFC;
+
+  /* Hai đường biểu đồ — đã kiểm tra phân biệt được với người mù màu. */
+  --s1: #6C4CF1;
+  --s2: #C96A0A;
+  --band: rgba(22, 128, 79, 0.12);
+
+  --shadow: 0 6px 24px rgba(76, 52, 180, 0.10);
+  --shadow-lg: 0 14px 40px rgba(60, 40, 160, 0.20);
+  --r: 20px;
+  --r-sm: 14px;
+  --tap: 44px;
+  --font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs: 15px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #8F78FF; --brand-2: #B3A2FF; --brand-deep: #5A40D8; --brand-soft: #2A2446;
+    --bg: #13111C; --card: #1E1B2B; --card-2: #252135; --ink: #F1EEFA; --ink-2: #C3BDD9; --muted: #9A94B3; --line: #2F2A42;
+    --good: #4FD08E; --good-soft: #153326; --warn: #F2B84B; --warn-soft: #352A12; --bad: #FF7AA2; --bad-soft: #3A1A27; --info: #7FA8FF; --info-soft: #18233D;
+    --s1: #8F78FF; --s2: #D27D1C; --band: rgba(79, 208, 142, 0.14);
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.35); --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  --brand: #8F78FF; --brand-2: #B3A2FF; --brand-deep: #5A40D8; --brand-soft: #2A2446;
+  --bg: #13111C; --card: #1E1B2B; --card-2: #252135; --ink: #F1EEFA; --ink-2: #C3BDD9; --muted: #9A94B3; --line: #2F2A42;
+  --good: #4FD08E; --good-soft: #153326; --warn: #F2B84B; --warn-soft: #352A12; --bad: #FF7AA2; --bad-soft: #3A1A27; --info: #7FA8FF; --info-soft: #18233D;
+  --s1: #8F78FF; --s2: #D27D1C; --band: rgba(79, 208, 142, 0.14);
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35); --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Cỡ chữ lớn cho người cao tuổi (Cài đặt). */
+:root[data-font="large"] { --fs: 17px; }
+:root[data-font="xlarge"] { --fs: 19px; }

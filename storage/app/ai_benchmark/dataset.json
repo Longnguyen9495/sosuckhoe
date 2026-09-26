@@ -1,0 +1,148 @@
+{
+  "version": "1.0",
+  "description": "Bộ 20 đơn mẫu để đánh giá AI OCR. 3 đơn đầu dựa trên ảnh của bà D. (prototype/assets/img/)",
+  "prescriptions": [
+    {
+      "id": "prescription_001",
+      "source_image": "prototype/assets/img/IMG_1308.jpg",
+      "expected_lines": [
+        {"drug_name": "Metformin", "strength": "500mg", "quantity": "60 viên", "dosage_instructions": "Uống 1 viên sau ăn sáng và tối"},
+        {"drug_name": "Gliclazide", "strength": "30mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên trước bữa sáng"}
+      ]
+    },
+    {
+      "id": "prescription_002",
+      "source_image": "prototype/assets/img/IMG_1309.jpg",
+      "expected_lines": [
+        {"drug_name": "Atorvastatin", "strength": "20mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên buổi tối"},
+        {"drug_name": "Amlodipine", "strength": "5mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên buổi sáng"}
+      ]
+    },
+    {
+      "id": "prescription_003",
+      "source_image": "prototype/assets/img/IMG_1310.jpg",
+      "expected_lines": [
+        {"drug_name": "Insulin Glargine", "strength": "100U/ml", "quantity": "1 bút tiêm", "dosage_instructions": "Tiêm 10 đơn vị trước khi ngủ"}
+      ]
+    },
+    {
+      "id": "prescription_004",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Metformin", "strength": "850mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên sau ăn trưa"}
+      ]
+    },
+    {
+      "id": "prescription_005",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Glimepiride", "strength": "2mg", "quantity": "15 viên", "dosage_instructions": "Uống 1 viên trước bữa sáng 30 phút"}
+      ]
+    },
+    {
+      "id": "prescription_006",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Sitagliptin", "strength": "100mg", "quantity": "28 viên", "dosage_instructions": "Uống 1 viên mỗi ngày"}
+      ]
+    },
+    {
+      "id": "prescription_007",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Pioglitazone", "strength": "15mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên mỗi ngày"}
+      ]
+    },
+    {
+      "id": "prescription_008",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Empagliflozin", "strength": "10mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên mỗi ngày vào buổi sáng"}
+      ]
+    },
+    {
+      "id": "prescription_009",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Vildagliptin", "strength": "50mg", "quantity": "56 viên", "dosage_instructions": "Uống 1 viên hai lần một ngày"}
+      ]
+    },
+    {
+      "id": "prescription_010",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Dapagliflozin", "strength": "10mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên mỗi ngày vào buổi sáng"}
+      ]
+    },
+    {
+      "id": "prescription_011",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Acarbose", "strength": "50mg", "quantity": "30 viên", "dosage_instructions": "Nhai 1 viên cùng với miếng đầu tiên của bữa ăn"}
+      ]
+    },
+    {
+      "id": "prescription_012",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Linagliptin", "strength": "5mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên mỗi ngày"}
+      ]
+    },
+    {
+      "id": "prescription_013",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Rosuvastatin", "strength": "10mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên buổi tối"}
+      ]
+    },
+    {
+      "id": "prescription_014",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Captopril", "strength": "25mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên trước bữa ăn"}
+      ]
+    },
+    {
+      "id": "prescription_015",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Losartan", "strength": "50mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên mỗi ngày"}
+      ]
+    },
+    {
+      "id": "prescription_016",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Enalapril", "strength": "5mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên mỗi ngày"}
+      ]
+    },
+    {
+      "id": "prescription_017",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Aspirin", "strength": "100mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên sau bữa ăn"}
+      ]
+    },
+    {
+      "id": "prescription_018",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Clopidogrel", "strength": "75mg", "quantity": "28 viên", "dosage_instructions": "Uống 1 viên mỗi ngày"}
+      ]
+    },
+    {
+      "id": "prescription_019",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Furosemide", "strength": "40mg", "quantity": "20 viên", "dosage_instructions": "Uống 1 viên mỗi ngày vào buổi sáng"}
+      ]
+    },
+    {
+      "id": "prescription_020",
+      "source_image": null,
+      "expected_lines": [
+        {"drug_name": "Spironolactone", "strength": "25mg", "quantity": "30 viên", "dosage_instructions": "Uống 1 viên mỗi ngày"}
+      ]
+    }
+  ]
+}
