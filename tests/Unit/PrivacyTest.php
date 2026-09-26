@@ -15,6 +15,12 @@ class PrivacyTest extends TestCase
         $this->assertSame('nguyenvanan5678', DefaultPassword::for('Nguyễn Văn An', '0912345678'));
         $this->assertSame('tranthidung0001', DefaultPassword::for('  Trần Thị  Dung ', '+84 900 000 001'));
         $this->assertSame('dangduc9999', DefaultPassword::for('Đặng Đức', '0900009999'));
+        // Chữ hai dấu (ể, ử, ẩ, ỡ…) — Str::ascii làm rơi, phải bỏ dấu đúng.
+        $this->assertSame('kiemthutrienkhai0123', DefaultPassword::for('Kiểm Thử Triển Khai', '0999000123'));
+        $this->assertSame('phamngocanhduongvy1234', DefaultPassword::for('PHẠM Ngọc Ẩnh Dưỡng Vỹ', '0900001234'));
+        // Tên dạng NFD (chữ gốc + dấu tổ hợp) như một số bàn phím gửi lên.
+        $nfd = "Nguye\u{0302}\u{0303}n Va\u{0306}n An";
+        $this->assertSame('nguyenvanan5678', DefaultPassword::for($nfd, '0912345678'));
     }
 
     public function test_scrubber_removes_citizen_id_and_health_insurance_numbers(): void

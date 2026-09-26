@@ -49,7 +49,9 @@ class PasswordAuthTest extends TestCase
     public function test_register_requires_consent_and_valid_data(): void
     {
         $this->register(['accepted' => false])->assertStatus(422)->assertJsonValidationErrors('accepted');
-        $this->register(['phone' => '12345'])->assertStatus(422)->assertJsonValidationErrors('phone');
+        $this->register(['phone' => '12345'])->assertStatus(422)
+            ->assertJsonPath('errors.phone.0', 'Số điện thoại chưa đúng (10 số, bắt đầu bằng 0).');
+        $this->register(['name' => ''])->assertStatus(422)->assertJsonPath('errors.name.0', 'Cần nhập họ tên.');
         $this->register(['birth_date' => now()->addDay()->toDateString()])->assertStatus(422)->assertJsonValidationErrors('birth_date');
         $this->assertSame(0, User::count());
     }
