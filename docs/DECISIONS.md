@@ -84,3 +84,10 @@ Không thêm bảng mới chỉ để sao chép cấu trúc JavaScript của pro
 - **Lý do:** Gia đình thường là người chụp ảnh đơn thuốc và muốn kiểm tra trước khi đưa cho bác sĩ. Không hợp lý khi ép họ phải đăng nhập 2FA bác sĩ để sử dụng tính năng này.
 - **Kiểm chứng:** `MissingApisTest::test_ai_prescription_draft_caregiver_can_create_and_list` pass khi caregiver tạo draft thành công.
 - **Giới hạn:** `matchDrugs` chỉ ghép tên + hàm lượng, không tính/đổi liều. Người dùng phải xác nhận từng dòng (`confirm`) trước khi lưu thành đơn thuốc thật. Tạo đơn thuốc từ draft vẫn nằm trong nhóm `doctor.2fa` nếu cần.
+
+## ADR-013 — Ép định dạng datetime cho MariaDB
+
+- **Quyết định:** Model `Consent` (và các model tương tự nếu cần) dùng `casts` + `setConsentedAtAttribute()` để ép định dạng `Y-m-d H:i:s` trước khi ghi MariaDB. Các service gọi `now()->toDateTimeString()` thay vì `now()`.
+- **Lý do:** PHP 8.5 trả `Carbon::now()` dạng ISO 8601 có timezone offset (`2026-09-27T21:26:23+07:00`); cột `timestamp` MariaDB không chấp nhận định dạng này, gây lỗi `SQLSTATE[22007]: Invalid datetime format: 1292`.
+- **Kiểm chứng:** `OnboardingFlowTest` pass trên MariaDB sau khi ép format. Full suite: 124 tests, 632 assertions, 0 failure.
+- **Cách đổi:** Nếu sau này chuyển sang cột `datetime(6)` hoặc DB hỗ trợ timezone, có thể bỏ mutator và dùng `datetime` cast thông thường.
