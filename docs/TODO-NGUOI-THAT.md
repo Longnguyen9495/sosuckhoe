@@ -2,8 +2,8 @@
 
 ## Chặn triển khai thật
 
-- [x] Đã kiểm chứng MySQL/MariaDB XAMPP trên database `suckhoe`: `php artisan migrate:fresh --seed`, `php artisan db:seed`, `php artisan test` đều thành công (91 tests, 385 assertions).
-- [ ] Xác nhận Apache chỉ phục vụ thư mục `backend/public`, bật `mod_rewrite` và không truy cập được `.env`.
+- [x] Đã kiểm chứng MySQL/MariaDB XAMPP trên database `sosuckhoe`: `php artisan migrate:fresh --seed`, `php artisan test` đều thành công (124 tests, 632 assertions, 0 failure).
+- [ ] Xác nhận Apache chỉ phục vụ thư mục `public/`, bật `mod_rewrite` và không truy cập được `.env`.
 - [ ] Đổi `APP_ENV`, `APP_DEBUG`, khóa ứng dụng và thông tin database cho môi trường thật.
 - [ ] Thay OTP fake bằng nhà cung cấp OTP thật trước khi mở cho người ngoài nhóm phát triển.
 - [ ] Cấu hình `services.push.driver` khác `fake` và thêm khoá VAPID thật trước khi bật Web Push.

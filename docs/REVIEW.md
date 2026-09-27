@@ -114,10 +114,10 @@ Bảo mật — làm trước:
 - [x] C3: `scopeBindings()` cho mọi nhóm route bệnh nhân; test tách dữ liệu tự quét mọi route `{patient}` và mọi id con
 - [x] H2: mã hoá ảnh phiếu, tên file ngẫu nhiên, tải ảnh qua Policy
 - [x] M2: xoá hàng đợi offline khi đăng xuất, gắn user / bệnh nhân cho từng mục
-- [x] H3: sửa kiểu `log_date`; toàn bộ test xanh trên SQLite **và** MariaDB
+- [x] H3: sửa kiểu `log_date`; toàn bộ test xanh trên SQLite **và** MariaDB (124 test, 632 assertion)
 
 Chạy được theo README:
-- [x] H1: base URL theo `APP_URL`, `sw.js` không cache API; thử thật tại `http://localhost/suckhoe/backend/public`
+- [x] H1: base URL theo `APP_URL`, `sw.js` không cache API; thử thật tại `http://sokhoe.local`
 
 Giao diện cho gia đình (theo mục 6.1, lấy bản mẫu làm chuẩn):
 - [x] Khung chung: đầu trang tím, nút chọn bệnh nhân, thanh tab dưới đáy + nút +, chế độ tối

@@ -76,26 +76,26 @@ Các mục đang tick nhưng ảnh chụp cho thấy chưa đạt: H1 (thử th�
 ## 3. Checklist sửa tiếp
 
 Sửa để mở được app:
-- [ ] R1: sửa router (bỏ `'*'` khỏi vòng tạo regex, escape pattern), chuyển `[hidden]` vào `base.css`, `npm run build`
-- [ ] R4: không hiện lỗi server nguyên văn; màn lỗi thân thiện có nút thử lại
+- [x] R1: sửa router (bỏ `'*'` khỏi vòng tạo regex, escape pattern), chuyển `[hidden]` vào `base.css`, `npm run build`
+- [x] R4: không hiện lỗi server nguyên văn; màn lỗi thân thiện có nút thử lại
 
 Sửa backend:
-- [ ] R2: quan hệ `items` của Prescription + test `GET /prescriptions`
-- [ ] R3: `GET /documents`, `GET /documents/{d}/file` + test (có trong sweep test)
-- [ ] R5: seeder / e2e có lịch cho ngày demo; % tuân thủ = "—" khi 0 việc
+- [x] R2: quan hệ `items` của Prescription + test `GET /prescriptions`
+- [x] R3: `GET /documents`, `GET /documents/{d}/file` + test (có trong sweep test)
+- [x] R5: seeder / e2e có lịch cho ngày demo; % tuân thủ = "—" khi 0 việc
 
 Hoàn thiện giao diện theo PROMPT-HOANTHIEN.md phần H (lấy `prototype/index.html` làm chuẩn):
-- [ ] Hôm nay: dải ngày, dòng thời gian có nút tích, ô nhập tại chỗ, nước, dấu hiệu bất thường, ghi chú
-- [ ] Lịch: biểu đồ ĐH + HA, giai đoạn đo, thanh % mỗi ngày, không tràn ở 360 px, ngày kiểu Việt Nam
-- [ ] Nhập đơn: đúng H7, có xem trước lịch
-- [ ] Phác đồ, Hồ sơ hiển thị đủ dữ liệu bà D.
-- [ ] Kiểm tra lại Đăng ký 7 bước, Cổng bác sĩ, Duyệt AI
+- [ ] Hôm nay: dải ngày, dòng thời gian có nút tích, ô nhập tại chỗ, nước, dấu hiệu bất thường, ghi chú — một phần (đã có lịch, tích, nước, ghi chú; thiếu dải ngày trượt)
+- [ ] Lịch: biểu đồ ĐH + HA, giai đoạn đo, thanh % mỗi ngày, không tràn ở 360 px, ngày kiểu Việt Nam — một phần (đã có tháng, giai đoạn, sự kiện; thiếu biểu đồ, thanh %, ngày kiểu VN chưa đẹp)
+- [ ] Nhập đơn: đúng H7, có xem trước lịch — một phần (đã có tìm thuốc, chọn cách dùng, xem trước lịch; thiếu số lượng kê/đã mua, đóng đơn cũ)
+- [x] Phác đồ, Hồ sơ hiển thị đủ dữ liệu bà D.
+- [ ] Kiểm tra lại Đăng ký 7 bước, Cổng bác sĩ, Duyệt AI — cần kiểm thử thủ công trên điện thoại thật
 
 Kiểm chứng — **bắt buộc trên site thật**:
-- [ ] Chụp màn hình tại **http://sokhoe.local** (không dùng e2e-server) sau khi đăng nhập thật bằng `0900000001` / `123456`, đủ các màn, 360 px và 1280 px, sáng / tối
-- [ ] Đọc console trình duyệt: 0 lỗi JS
-- [ ] Mở từng ảnh xem lại: không có chữ lỗi, không tràn ngang, có dữ liệu bà D.
-- [ ] Sửa lại tick trong REVIEW.md, README, TODO-NGUOI-THAT cho đúng thực tế; commit hết, không để file dở
+- [x] Chụp màn hình tại **http://sokhoe.local** (không dùng e2e-server) sau khi đăng nhập thật bằng `0900000001` / `123456`, đủ các màn, 360 px và 1280 px, sáng / tối
+- [x] Đọc console trình duyệt: 0 lỗi JS
+- [x] Mở từng ảnh xem lại: không có chữ lỗi, không tràn ngang, có dữ liệu bà D.
+- [x] Sửa lại tick trong REVIEW.md, README, TODO-NGUOI-THAT cho đúng thực tế; commit hết, không để file dở
 
 ---
 

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-09-27 — Kiểm thử cuối Giai đoạn 6 (trình duyệt + MariaDB + sửa lỗi)
+
+### Thêm
+- CDP scripts kiểm thử trình duyệt (`docs/check-console.mjs`, `check-family.mjs`, `check-errors.mjs`, `check-routes.mjs`, `capture-all.mjs`): chạy headless Chrome, chụp ảnh màn hình 8 route ở 360×800 (sáng/tối) và 1280×800.
+- Thư mục `docs/screenshots/` với ảnh chụp `/today`, `/plan`, `/records`, `/calendar`, `/rx/new`, `/upload`, `/doctor`, `/onboarding/1`.
+
+### Thay đổi
+- `Consent` model: thêm `casts()` và `setConsentedAtAttribute()` để ép định dạng `Y-m-d H:i:s` trước khi ghi MariaDB; khắc phục lỗi `Incorrect datetime value: '2026-09-27T21:26:23+07:00'` do PHP 8.5 trả ISO 8601 có timezone mà cột `timestamp` MariaDB không chấp nhận.
+- `OnboardingFlow.php` và `QuickProfileService.php`: dùng `now()->toDateTimeString()` thay vì `now()` khi ghi `consented_at`.
+- `docs/REVIEW-2.md`: tick R1–R5 đã xong, ghi chú "một phần" cho màn Hôm nay / Lịch / Nhập đơn (thiếu tương tác chưa có).
+- `docs/TODO-NGUOI-THAT.md`: sửa tên CSDL thành `sosuckhoe`, đường dẫn Apache `public/`, cập nhật số liệu kiểm thử (124 test / 632 assertion).
+- `docs/REVIEW.md`: cập nhật H3 test count, sửa URL demo thành `http://sokhoe.local`.
+
+### Kiểm chứng
+- Headless Chrome: tất cả 8 route render đúng, không có lỗi console JS.
+- API `/api/v1/patients/{pid}/day/{date}` trả đúng 26 mục lịch cho bà D.
+- API `/api/v1/patients/{pid}/prescriptions` trả đúng `items` array.
+- API `/api/v1/patients/{pid}/documents` trả đúng 28 phiếu.
+- Full suite SQLite: 124 tests, 632 assertions; 0 failure.
+- Full suite MariaDB: 124 tests, 632 assertions; 0 failure.
+
 ## 2026-09-27 — Sổ Sức Khỏe (sosuckhoe): đăng ký nhanh, AI đọc ảnh, chế độ ăn
 
 ### Thêm
