@@ -45,3 +45,6 @@ docs/.chrome-profile/
 
 # Ghi chú kế hoạch cá nhân (có SĐT / mật khẩu tài khoản test) — chỉ để ở máy
 /docs/KE-HOACH-TIEP-THEO.md
+
+# Ảnh chụp màn hình có dữ liệu bệnh nhân thật — chỉ để ở máy (12 ảnh cũ đã track vẫn giữ)
+/docs/screenshots/
