@@ -45,7 +45,7 @@ final class QuickProfileService
                 Consent::create([
                     'user_id' => $user->id,
                     'consent_version_id' => $version->id,
-                    'consented_at' => now(),
+                    'consented_at' => now()->toDateTimeString(),
                     'ip_address' => $ip,
                 ]);
             }

@@ -150,7 +150,7 @@ class OnboardingFlow
             Consent::create([
                 'user_id' => $draft->user_id,
                 'consent_version_id' => $consentVersionId,
-                'consented_at' => $data['consent']['accepted_at'] ?? now(),
+                'consented_at' => $data['consent']['accepted_at'] ?? now()->toDateTimeString(),
                 'ip_address' => $ip,
             ]);
 
