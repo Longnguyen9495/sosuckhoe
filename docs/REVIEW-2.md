@@ -85,7 +85,7 @@ Sửa backend:
 - [x] R5: seeder / e2e có lịch cho ngày demo; % tuân thủ = "—" khi 0 việc
 
 Hoàn thiện giao diện theo PROMPT-HOANTHIEN.md phần H (lấy `prototype/index.html` làm chuẩn):
-- [ ] Hôm nay: dải ngày, dòng thời gian có nút tích, ô nhập tại chỗ, nước, dấu hiệu bất thường, ghi chú — một phần (đã có lịch, tích, nước, ghi chú; thiếu dải ngày trượt)
+- [x] Hôm nay: dải ngày, dòng thời gian có nút tích, ô nhập tại chỗ, nước, dấu hiệu bất thường, ghi chú — đã xong (ảnh `today-auth-360x800-light.png` chụp tại http://sokhoe.local, có dải ngày trượt, thanh %, mốc sự kiện, lịch thuốc)
 - [ ] Lịch: biểu đồ ĐH + HA, giai đoạn đo, thanh % mỗi ngày, không tràn ở 360 px, ngày kiểu Việt Nam — một phần (đã có tháng, giai đoạn, sự kiện; thiếu biểu đồ, thanh %, ngày kiểu VN chưa đẹp)
 - [ ] Nhập đơn: đúng H7, có xem trước lịch — một phần (đã có tìm thuốc, chọn cách dùng, xem trước lịch; thiếu số lượng kê/đã mua, đóng đơn cũ)
 - [x] Phác đồ, Hồ sơ hiển thị đủ dữ liệu bà D.

@@ -110,13 +110,15 @@ try {
             const pData = await pRes.json();
             if (!pData.data?.[0]) throw new Error('No patient');
             sessionStorage.setItem('health_patient', JSON.stringify(pData.data[0]));
-            location.hash = '${route}';
-            await sleep(2500);
+            location.hash = ${JSON.stringify(route)};
+            await sleep(3500);
             return { hash: location.hash, patient: pData.data[0].full_name, title: document.title };
         })()`,
         awaitPromise: true,
         returnByValue: true,
     });
+    await send('Page.navigate', { url: url + '/#' + route });
+    await sleep(3500);
     if (authResult.exceptionDetails) {
         throw new Error(authResult.exceptionDetails.exception?.description || authResult.exceptionDetails.text);
     }
