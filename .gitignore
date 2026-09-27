@@ -42,3 +42,6 @@ Thumbs.db
 # Hồ sơ trình duyệt dùng khi chụp màn hình
 docs/.edge-cdp-profile/
 docs/.chrome-profile/
+
+# Ghi chú kế hoạch cá nhân (có SĐT / mật khẩu tài khoản test) — chỉ để ở máy
+/docs/KE-HOACH-TIEP-THEO.md

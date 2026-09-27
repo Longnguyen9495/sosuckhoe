@@ -71,6 +71,8 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
+            // Cả user deploy lẫn PHP-FPM (nhóm www-data) cùng ghi được file log.
+            'permission' => 0664,
         ],
 
         'slack' => [
