@@ -163,17 +163,37 @@ export async function renderToday(ctx, params = {}) {
         const next = isToday ? nextMeal(day.routine || {}, nowTimeVN()) : null;
         const rows = menuRows(day.menu, day.routine || {}, next?.key);
         screen.querySelector('#week-menu-btn').hidden = !weeklyMenu(carePlan?.content);
-        if (!carePlan || !rows) {
+        const guide = carePlan ? dietGuide(carePlan.content?.diet || {}) : '';
+        if (!carePlan || (!rows && !guide)) {
             box.innerHTML = `<div class="cp-empty"><span class="cp-ico">${icon('salad', { size: 30 })}</span><b>Chưa có thực đơn</b>
                 <p class="small ink2">AI lên thực đơn mỗi ngày một khác và chọn bài tập có video, dựa trên thuốc đang dùng và kết quả xét nghiệm.</p>
                 <button class="btn" data-act="make-plan">${icon('sparkles', { size: 18 })} Lên thực đơn & bài tập</button></div>`;
             return;
         }
-        const diet = carePlan.content?.diet || {};
-        const tips = [['check', 'Nên ăn', diet.eat_more, 'good'], ['ban', 'Tránh', diet.avoid, 'bad']].filter(([, , list]) => list?.length);
         box.innerHTML = `${day.daily?.tip ? `<div class="menu-hint">${icon('sparkles', { size: 16 })}<span>${esc(day.daily.tip)}</span></div>` : ''}
-            <div class="meals-list">${rows}</div>
-            <div class="menu-tips">${tips.map(([ic, label, list, tone]) => `<p class="menu-tip ${tone}">${icon(ic, { size: 15 })}<span><b>${label}:</b> ${esc(list.slice(0, 2).join(' · '))}</span></p>`).join('')}</div>`;
+            ${rows ? `<div class="meals-list">${rows}</div>` : ''}
+            ${guide}`;
+    }
+
+    /**
+     * Không ăn đúng được thực đơn (ăn cỗ, ăn ngoài, nhà nấu món khác…): đủ 3 nhóm nên ăn / hạn chế / tránh
+     * và lưu ý thuốc với thức ăn, để tự chọn món thay thế.
+     */
+    function dietGuide(diet) {
+        const groups = [
+            ['check', 'Nên ăn', diet.eat_more, 'good'],
+            ['warn', 'Hạn chế', diet.limit, 'warn'],
+            ['ban', 'Tránh', diet.avoid, 'bad'],
+        ].filter(([, , list]) => list?.length);
+        const drug = diet.drug_food_notes || [];
+        if (!groups.length && !drug.length) return '';
+        return `<div class="diet-guide">
+            <p class="diet-guide-h">${icon('info', { size: 16 })}<span><b>Không ăn được như thực đơn?</b> Tự chọn món theo các nhóm dưới đây.</span></p>
+            ${groups.map(([ic, label, list, tone]) => `<div class="diet-grp ${tone}"><div class="diet-grp-h">${icon(ic, { size: 15 })}<b>${label}</b></div>
+                <ul>${list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}
+            ${drug.length ? `<div class="diet-grp drug"><div class="diet-grp-h">${icon('pill', { size: 15 })}<b>Lưu ý với thuốc đang dùng</b></div>
+                <ul>${drug.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+        </div>`;
     }
 
     /* ----- Bài tập của ngày (luân phiên mỗi ngày): video + đánh dấu đã tập ----- */

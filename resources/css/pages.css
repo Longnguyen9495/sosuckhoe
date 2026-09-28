@@ -144,11 +144,27 @@
 .meal-h small { color: var(--muted); font-size: .76rem; font-weight: 600; }
 .meal-h .chip { background: var(--m); color: #fff; padding: 1px 8px; font-size: .7rem; }
 .meal-body p { margin: 3px 0 0; font-size: .92rem; color: var(--ink); line-height: 1.45; }
-.menu-tips { display: grid; gap: 6px; margin-top: 10px; }
-.menu-tip { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: .84rem; border-radius: 12px; padding: 8px 10px; }
-.menu-tip .ic { flex: none; margin-top: 2px; }
-.menu-tip.good { background: var(--good-soft); color: var(--good); } .menu-tip.good span { color: var(--ink); } .menu-tip.good b { color: var(--good); }
-.menu-tip.bad { background: var(--bad-soft); color: var(--bad); } .menu-tip.bad span { color: var(--ink); } .menu-tip.bad b { color: var(--bad); }
+/* Nên ăn / hạn chế / tránh: để tự chọn món khi không ăn đúng thực đơn */
+.diet-guide { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.meals-list + .diet-guide { margin-top: 12px; }
+.menu-hint + .diet-guide { border-top: 0; padding-top: 0; }
+.diet-guide-h { display: flex; gap: 8px; align-items: flex-start; margin: 0 2px 2px; font-size: .86rem; color: var(--ink-2); line-height: 1.45; }
+.diet-guide-h .ic { flex: none; margin-top: 2px; color: var(--brand); }
+.diet-guide-h b { color: var(--ink); }
+.diet-grp { --g: var(--brand); --g-soft: var(--brand-soft); background: var(--g-soft); border-radius: 14px; padding: 9px 12px 10px; }
+.diet-grp.good { --g: var(--good); --g-soft: var(--good-soft); }
+.diet-grp.warn { --g: var(--warn); --g-soft: var(--warn-soft); }
+.diet-grp.bad { --g: var(--bad); --g-soft: var(--bad-soft); }
+.diet-grp.drug { --g: var(--info); --g-soft: var(--info-soft); }
+.diet-grp-h { display: flex; align-items: center; gap: 6px; color: var(--g); font-size: .88rem; }
+.diet-grp-h .ic { width: 22px; height: 22px; padding: 4px; border-radius: 7px; background: var(--g); color: var(--card); }
+.diet-grp ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.diet-grp li { position: relative; padding-left: 14px; font-size: .9rem; line-height: 1.45; color: var(--ink); }
+.diet-grp li::before { content: ""; position: absolute; left: 2px; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--g); }
+@media (min-width: 560px) {
+  .diet-guide { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .diet-guide-h, .diet-grp.drug { grid-column: 1 / -1; }
+}
 .menu-days { margin-top: 6px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .menu-days button { min-width: 0; padding: 8px 0; text-align: center; }
 .menu-day { padding: 10px 0; border-bottom: 1px solid var(--line); }
