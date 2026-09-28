@@ -54,6 +54,9 @@ final class PatientDayController extends Controller
             'meta.symptoms' => ['nullable', 'array'],
             'meta.symptoms.*' => ['string', 'max:40'],
             'meta.note' => ['nullable', 'string', 'max:2000'],
+            // Bài tập (id trong thư viện) đã tập trong ngày.
+            'meta.exercises_done' => ['nullable', 'array', 'max:20'],
+            'meta.exercises_done.*' => ['string', 'max:40'],
         ]);
 
         $scheduleItemId = $validated['schedule_item_id'] ?? null;
@@ -72,7 +75,7 @@ final class PatientDayController extends Controller
             $log->completed_at = $completed ? now() : null;
         } else {
             $log->completed = $log->completed ?? false;
-            $log->meta = array_merge($log->meta ?? [], array_intersect_key($validated['meta'] ?? [], array_flip(['water_cups', 'symptoms', 'note'])));
+            $log->meta = array_merge($log->meta ?? [], array_intersect_key($validated['meta'] ?? [], array_flip(['water_cups', 'symptoms', 'note', 'exercises_done'])));
         }
         $log->recorded_by = $request->user()?->id;
         $log->save();

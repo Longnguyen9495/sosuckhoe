@@ -2,10 +2,15 @@
 import { api, apiBlob } from '../core/api.js';
 import { dm } from '../core/format.js';
 import { esc, delegate, skeleton, errorBox } from '../ui/dom.js';
+import { icon } from '../ui/icons.js';
 import { toast, openLightbox, confirmDialog } from '../ui/shell.js';
 
 const CATS = { all: 'Tất cả', don: 'Đơn thuốc', xn: 'Xét nghiệm', cdha: 'Chẩn đoán hình ảnh', kham: 'Kết quả khám', hd: 'Hướng dẫn', thuoc: 'Vỏ hộp thuốc', khac: 'Khác' };
 const FLAG = { H: ['bad', '↑ Cao'], L: ['info', '↓ Thấp'], W: ['warn', 'Lưu ý'], N: ['good', 'Bình thường'] };
+/** Số chẩn đoán hiện sẵn; phần còn lại gập lại để màn Hồ sơ không bị đẩy dài trên điện thoại. */
+const COND_SHOWN = 6;
+/** Tên chỉ số không kèm nhóm, chữ thường, bỏ dấu — khớp DuplicateMatcher::labName() phía máy chủ. */
+const labName = (metric) => String(metric).split(' — ').pop().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/[^a-z0-9.]+/g, ' ').trim();
 
 export async function renderRecords(ctx) {
     const pid = ctx.patient.id;
@@ -15,7 +20,7 @@ export async function renderRecords(ctx) {
         sub: 'Ảnh phiếu khám được mã hoá khi lưu',
         tab: 'records',
         body: `<div class="card lift" id="profile">${skeleton(2)}</div>
-            <div class="sec-title"><h2>Phiếu khám</h2><button class="btn sm" data-act="upload">📷 Tải ảnh</button></div>
+            <div class="sec-title"><h2>Phiếu khám</h2><button class="btn sm" data-act="upload">${icon('camera', { size: 16 })} Tải ảnh</button></div>
             <div class="filters" id="filters"></div>
             <div id="docs" style="margin-top:8px">${skeleton(4)}</div>
             <div class="sec-title"><h2>Kết quả xét nghiệm</h2><span id="lab-date"></span></div>
@@ -35,7 +40,8 @@ export async function renderRecords(ctx) {
             const p = data.patient;
             box.innerHTML = `<b>${esc(p.full_name)}</b>${p.birth_year ? ` · sinh ${p.birth_year}` : ''}
                 ${p.allergies ? `<div class="small ink2">Dị ứng: ${esc(p.allergies)}</div>` : ''}
-                <div class="chips" style="margin-top:10px">${data.conditions.map((c) => `<span class="chip ${c.priority === 'high' ? 'bad' : 'info'}">${esc(c.title.split(/[(—]/)[0].trim())}</span>`).join('')}</div>`;
+                <div class="chips" style="margin-top:10px">${data.conditions.map((c, i) => `<span class="chip ${c.priority === 'high' ? 'bad' : 'info'}" ${i >= COND_SHOWN ? 'data-more hidden' : ''}>${esc(c.title.split(/[(—]/)[0].trim())}</span>`).join('')}
+                ${data.conditions.length > COND_SHOWN ? `<button class="link-btn small" data-act="more-cond">+ Xem thêm ${data.conditions.length - COND_SHOWN} chẩn đoán</button>` : ''}</div>`;
         } catch (error) {
             box.innerHTML = errorBox(error.message);
         }
@@ -62,7 +68,7 @@ export async function renderRecords(ctx) {
                 <div class="chips" style="margin-top:6px">
                     ${d.ai_status === 'done' ? '<span class="chip info">AI đã đọc</span>' : d.ai_status === 'failed' ? '<span class="chip warn">AI chưa đọc được</span>' : ''}
                     ${d.medications_count ? `<span class="chip ${d.imported ? 'good' : 'y'}">${d.medications_count} thuốc${d.imported ? ' · đã vào lịch' : ' · chờ xác nhận'}</span>` : ''}
-                    ${d.masked_count ? `<span class="chip good">🔒 Đã ẩn ${d.masked_count} số định danh</span>` : ''}
+                    ${d.masked_count ? `<span class="chip good">${icon('lock', { size: 13 })} Đã ẩn ${d.masked_count} số định danh</span>` : ''}
                 </div>
                 <div class="row" style="margin-top:4px">${d.medications_count && !d.imported ? '<button class="link-btn small" data-act="nav" data-to="/review">Xác nhận thuốc →</button>' : ''}<span class="grow"></span><button class="link-btn small" style="color:var(--bad)" data-act="del" data-id="${esc(d.id)}">Xoá</button></div>
                 </div></div>`;
@@ -117,11 +123,15 @@ export async function renderRecords(ctx) {
                 const [group, name] = r.metric.includes(' — ') ? r.metric.split(' — ') : ['Kết quả', r.metric];
                 (groups[group] ||= []).push({ ...r, name });
             });
+            // Cùng chỉ số, cùng ngày mà có nhiều giá trị khác nhau: nhắc đối chiếu lại với phiếu gốc (AI có thể đọc nhầm).
+            const key = (r) => `${labName(r.metric)}|${(r.measured_at || '').slice(0, 10)}`;
+            const values = {};
+            data.forEach((r) => { (values[key(r)] ||= new Set()).add(String(r.value).replace(/\s+/g, '').replace(',', '.').toLowerCase()); });
             const dates = [...new Set(data.map((r) => (r.measured_at || '').slice(0, 10)))].filter(Boolean);
             screen.querySelector('#lab-date').textContent = dates.length ? `ngày ${dates.map(dm).join(', ')}` : '';
             box.innerHTML = Object.entries(groups).map(([group, rows]) => `<div class="card flat scroll-x"><h3>${esc(group)}</h3>
                 <table class="tbl"><thead><tr><th>Chỉ số</th><th>Kết quả</th><th>Tham chiếu</th><th></th></tr></thead><tbody>
-                ${rows.map((r) => { const f = FLAG[r.flag] || FLAG.N; return `<tr><td>${esc(r.name)}</td><td class="v">${esc(r.value)} <span class="muted" style="font-weight:400">${esc(r.unit || '')}</span></td><td class="small muted">${esc(r.reference_range || '')}</td><td><span class="chip ${f[0]}">${f[1]}</span></td></tr>`; }).join('')}
+                ${rows.map((r) => { const f = FLAG[r.flag] || FLAG.N; const conflict = values[key(r)].size > 1; return `<tr><td>${esc(r.name)}${conflict ? '<div><span class="chip warn" title="Cùng ngày có kết quả khác — đối chiếu với phiếu gốc">' + icon('warn', { size: 13 }) + ' Có 2 kết quả khác nhau</span></div>' : ''}</td><td class="v">${esc(r.value)} <span class="muted" style="font-weight:400">${esc(r.unit || '')}</span></td><td class="small muted">${esc(r.reference_range || '')}</td><td><span class="chip ${f[0]}">${f[1]}</span></td></tr>`; }).join('')}
                 </tbody></table></div>`).join('');
         } catch (error) {
             box.innerHTML = errorBox(error.message);
@@ -141,6 +151,7 @@ export async function renderRecords(ctx) {
     }
 
     delegate(screen, {
+        'more-cond': (el) => { screen.querySelectorAll('#profile [data-more]').forEach((c) => { c.hidden = false; }); el.remove(); },
         cat: (el) => { cat = el.dataset.cat; ctx.store.set('recCat', cat); drawFilters(); drawDocs(); },
         zoom: async (el) => {
             try { openLightbox(await thumbUrl(el.dataset.id), 'Ảnh phiếu khám'); } catch (error) { toast(error.message, 'bad'); }

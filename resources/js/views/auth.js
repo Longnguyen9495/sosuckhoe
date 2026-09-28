@@ -5,7 +5,9 @@
 import { api, setSession, getUserIdFromToken } from '../core/api.js';
 import { announceUser } from '../core/offline.js';
 import { esc, delegate } from '../ui/dom.js';
+import { icon } from '../ui/icons.js';
 import { toast, openSheet, closeSheet } from '../ui/shell.js';
+import { FEATURES } from '../core/features.js';
 
 function authShell(ctx, inner, { title = 'Sổ theo dõi điều trị tại nhà', sub = 'Lịch thuốc, chỉ số và tái khám — theo đúng đơn bác sĩ.' } = {}) {
     ctx.root.className = 'app';
@@ -39,7 +41,7 @@ async function afterLogin(ctx, data, next = '/tenants') {
 
 const passwordField = (id = 'password', label = 'Mật khẩu', autocomplete = 'current-password') => `<div class="field">
     <label for="${id}">${label}</label>
-    <div class="pw"><input id="${id}" name="${id}" type="password" autocomplete="${autocomplete}" required><button type="button" class="pw-eye" data-act="toggle-pw" data-for="${id}" aria-label="Hiện mật khẩu">👁</button></div>
+    <div class="pw"><input id="${id}" name="${id}" type="password" autocomplete="${autocomplete}" required><button type="button" class="pw-eye" data-act="toggle-pw" data-for="${id}" aria-label="Hiện mật khẩu">${icon('eye', { size: 20 })}</button></div>
 </div>`;
 
 function togglePw(root) {
@@ -168,7 +170,7 @@ export function renderStart(ctx) {
 }
 
 function showPasswordOnce(password, phone) {
-    const sheet = openSheet(`<div id="pw-done"><h3>🎉 Đã tạo sổ sức khỏe</h3>
+    const sheet = openSheet(`<div id="pw-done"><h3>${icon('party', { size: 22 })} Đã tạo sổ sức khỏe</h3>
         <p class="ink2" style="margin-top:0">Lần sau đăng nhập bằng số điện thoại <b>${esc(phone)}</b> và mật khẩu:</p>
         <div class="pw-big"><code>${esc(password)}</code><button class="btn sm ghost" data-act="copy">Chép</button></div>
         <p class="small muted">Hãy ghi lại. Có thể đổi mật khẩu trong mục <b>Thông tin cá nhân</b>.</p>
@@ -198,7 +200,7 @@ export function renderTwoFactor(ctx) {
             const result = await api('/auth/2fa/challenge', { method: 'POST', body: { code: form.code.value.trim(), device_name: 'Trình duyệt' } });
             setSession(result.token, getUserIdFromToken());
             toast('Đã xác thực hai lớp.');
-            ctx.go(ctx.patient ? '/doctor' : '/patients');
+            ctx.go(ctx.patient ? (FEATURES.doctor ? '/doctor' : '/today') : '/patients');
         } catch (error) {
             toast(error.message, 'bad');
         }
@@ -241,9 +243,9 @@ export async function renderTenants(ctx) {
             return ctx.go('/patients');
         }
         list.innerHTML = data.length
-            ? data.map((t) => `<button class="choice" data-act="pick" data-id="${esc(t.id)}"><span class="avatar">${t.type === 'clinic' ? '🏥' : '🏠'}</span><span class="grow"><b>${esc(t.name)}</b><br><span class="small muted">${t.type === 'clinic' ? 'Phòng khám' : 'Gia đình'}</span></span></button>`).join('')
+            ? data.map((t) => `<button class="choice" data-act="pick" data-id="${esc(t.id)}"><span class="avatar">${icon(t.type === 'clinic' ? 'hospital' : 'house', { size: 20 })}</span><span class="grow"><b>${esc(t.name)}</b><br><span class="small muted">${t.type === 'clinic' ? 'Phòng khám' : 'Gia đình'}</span></span></button>`).join('')
             : '<p class="small ink2">Tài khoản chưa có hồ sơ nào. Tạo hồ sơ người bệnh đầu tiên để bắt đầu.</p>';
-        list.insertAdjacentHTML('beforeend', '<button class="btn ghost block" data-act="new">+ Tạo hồ sơ người bệnh mới</button><button class="link-btn" data-act="logout">Đăng xuất</button>');
+        list.insertAdjacentHTML('beforeend', `${FEATURES.caregiver || !data.length ? '<button class="btn ghost block" data-act="new">+ Tạo sổ sức khỏe</button>' : ''}<button class="link-btn" data-act="logout">Đăng xuất</button>`);
         delegate(list, {
             pick: (el) => { ctx.store.batch({ tenant: data.find((t) => t.id === el.dataset.id), patient: null }); ctx.go('/patients'); },
             new: () => ctx.go('/onboarding/1'),
@@ -259,15 +261,16 @@ export async function renderPatients(ctx) {
     const list = card.querySelector('#list');
     try {
         const { data } = await api('/patients');
-        const open = (p) => { ctx.store.set('patient', p); ctx.go(p.access_role === 'doctor' ? '/doctor' : '/today'); };
+        const open = (p) => { ctx.store.set('patient', p); ctx.go(FEATURES.doctor && p.access_role === 'doctor' ? '/doctor' : '/today'); };
         if (data.length === 1) return open(data[0]);
         list.innerHTML = (data.length
             ? data.map((p) => `<button class="choice" data-act="pick" data-id="${esc(p.id)}"><span class="avatar">${esc((p.full_name || '?').replace(/^(Bà|Ông)\s+/, '').charAt(0))}</span><span class="grow"><b>${esc(p.full_name)}</b><br><span class="small muted">${p.birth_year ? `Sinh ${p.birth_year}` : ''}</span></span></button>`).join('')
             : '<p class="small ink2">Không gian này chưa có người bệnh bạn được phép xem.</p>')
-            + '<button class="link-btn" data-act="back">← Đổi không gian</button>';
+            + (FEATURES.caregiver ? '<button class="link-btn" data-act="back">← Đổi không gian</button>' : '<button class="link-btn" data-act="logout">Đăng xuất</button>');
         delegate(list, {
             pick: (el) => open(data.find((p) => p.id === el.dataset.id)),
             back: () => { ctx.store.set('tenant', null); ctx.go('/tenants'); },
+            logout: () => ctx.logout(),
         });
     } catch (error) {
         list.innerHTML = `<div class="error-box">${esc(error.message)}</div>`;

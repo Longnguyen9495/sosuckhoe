@@ -3,6 +3,7 @@ import { api } from '../core/api.js';
 import { hhmm, vn, dmy } from '../core/format.js';
 import { esc, delegate, skeleton, errorBox } from '../ui/dom.js';
 import { toast, confirmDialog, openSheet, closeSheet } from '../ui/shell.js';
+import { FEATURES } from '../core/features.js';
 
 const ROLE = { caregiver: 'Người chăm sóc', patient: 'Người bệnh', doctor: 'Bác sĩ', viewer: 'Người xem', owner: 'Chủ tài khoản', member: 'Thành viên' };
 
@@ -24,8 +25,8 @@ export async function renderSettings(ctx) {
             </div>
             <div class="sec-title"><h2>Ngưỡng cảnh báo</h2></div>
             <div class="card row"><div class="grow small ink2">Mức đường huyết, huyết áp, mạch dùng để đánh giá “Đạt / Cần chú ý / Cảnh báo”.</div><button class="btn sm ghost" data-act="nav" data-to="/settings/thresholds">Xem ngưỡng</button></div>
-            <div class="sec-title"><h2>Thành viên</h2><button class="btn sm" data-act="invite">+ Mời</button></div>
-            <div class="card" id="members">${skeleton(2)}</div>
+            ${FEATURES.caregiver ? `<div class="sec-title"><h2>Thành viên</h2><button class="btn sm" data-act="invite">+ Mời</button></div>
+            <div class="card" id="members">${skeleton(2)}</div>` : ''}
             <div class="sec-title"><h2>Dữ liệu & tài khoản</h2></div>
             <div class="card">
                 <button class="btn ghost block" data-act="nav" data-to="/calendar">Xuất bảng chỉ số (.csv) — ở màn Lịch</button>
@@ -109,7 +110,7 @@ export async function renderSettings(ctx) {
     });
 
     drawRoutine();
-    drawMembers();
+    if (FEATURES.caregiver) drawMembers();
 }
 
 /* ================= Ngưỡng ================= */

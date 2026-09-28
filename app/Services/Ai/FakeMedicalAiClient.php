@@ -47,6 +47,19 @@ final class FakeMedicalAiClient implements MedicalAiClient
         ];
     }
 
+    public function generateDailyMenu(array $context): array
+    {
+        $n = count($context['recent_menus'] ?? []);
+
+        return [
+            'breakfast' => 'Thứ Hai — Bún gạo lứt với thịt gà xé, nhiều rau (ngày '.($n + 1).')',
+            'lunch' => 'Nửa bát cơm, cá thu sốt cà chua nhạt, rau muống luộc',
+            'dinner' => 'Canh cải nấu tôm, đậu phụ luộc, nửa bát cơm',
+            'snacks' => 'Nửa quả táo',
+            'tip' => 'Ăn rau trước, cơm sau để đường huyết lên chậm hơn.',
+        ];
+    }
+
     public function generateCarePlan(array $context): array
     {
         return [
@@ -59,8 +72,16 @@ final class FakeMedicalAiClient implements MedicalAiClient
                 'avoid' => ['Nước ngọt có đường'],
                 'drug_food_notes' => ['Metformin uống sau ăn để giảm khó chịu dạ dày'],
                 'sample_day' => ['breakfast' => 'Cháo yến mạch + 1 quả trứng', 'lunch' => 'Nửa bát cơm gạo lứt, cá hấp, rau luộc', 'dinner' => 'Canh bí, thịt nạc luộc, rau cải', 'snacks' => '1 hộp sữa chua không đường'],
+                'weekly_menu' => array_map(fn (string $b) => ['breakfast' => $b, 'lunch' => 'Nửa bát cơm gạo lứt, cá hấp, rau luộc', 'dinner' => 'Canh bí, thịt nạc luộc, rau cải', 'snacks' => '1 hộp sữa chua không đường'], [
+                    'Cháo yến mạch + 1 quả trứng', 'Bánh mì nguyên cám + trứng ốp', 'Phở gà ít bánh', 'Xôi gấc nửa phần + sữa không đường',
+                    'Bún cá nhiều rau', 'Cháo đậu xanh + trứng luộc', 'Miến gà',
+                ]),
             ],
             'lifestyle' => ['Đi bộ 30 phút mỗi ngày sau ăn'],
+            'exercises' => [
+                ['id' => 'walk_after_meal', 'why' => 'Giúp đường huyết sau ăn tăng ít hơn (HbA1c cao).', 'frequency' => '15 phút sau ăn tối'],
+                ['id' => 'khong_co_trong_thu_vien', 'why' => 'Bài AI tự bịa — phải bị loại.'],
+            ],
             'monitoring' => [['what' => 'Đường huyết lúc đói', 'how_often' => 'Mỗi sáng', 'target' => '4,4–7,2 mmol/L (tham khảo)']],
             'medication_notes' => ['Uống Metformin sau ăn sáng và tối theo đơn'],
             'warning_signs' => ['Vã mồ hôi, run tay, lú lẫn — đo đường huyết ngay'],

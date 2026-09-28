@@ -94,6 +94,11 @@ class Patient extends TenantModel
         return $this->hasMany(PatientRoutine::class);
     }
 
+    public function shareLinks(): HasMany
+    {
+        return $this->hasMany(ShareLink::class);
+    }
+
     public function carePlans(): HasMany
     {
         return $this->hasMany(CarePlan::class);

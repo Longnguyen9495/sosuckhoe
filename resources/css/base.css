@@ -9,9 +9,24 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  overflow-wrap: break-word;
+  -webkit-tap-highlight-color: transparent;
 }
+body.sheet-open { overflow: hidden; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
+/* Danh sách thả xuống của <select> do hệ điều hành vẽ: tô màu tường minh để chữ không trùng màu nền
+   (select dùng color: inherit, nền trong suốt → option kế thừa chữ sáng trên nền trắng mặc định). */
+option, optgroup { background-color: var(--card); color: var(--ink); }
+option:disabled { color: var(--muted); }
+/* Điện thoại: bỏ trễ chạm / phóng khi chạm đúp; ô nhập không bao giờ rộng hơn khung chứa. */
+button, a, label, input, select, textarea, summary { touch-action: manipulation; }
+input, select, textarea { min-width: 0; max-width: 100%; }
+/* iOS tự phóng to trang khi chạm vào ô nhập có chữ nhỏ hơn 16px. */
+input, select, textarea { font-size: max(16px, 1rem); }
+/* iOS: ô ngày / giờ có độ rộng tối thiểu riêng và bỏ qua width:100% → tràn khỏi lưới 2 cột. */
+input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; text-align: left; }
+input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 a { color: var(--brand); }
 img { max-width: 100%; }
 h1, h2, h3, h4 { line-height: 1.25; }
@@ -21,3 +36,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
 
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+
+/* Icon nét (Lucide, ui/icons.js): canh giữa theo dòng chữ, màu theo chữ. */
+.ic { display: inline-block; vertical-align: -0.2em; flex: none; }
+button .ic, .btn .ic, .chip .ic, summary .ic { vertical-align: -0.22em; }

@@ -20,6 +20,14 @@ interface MedicalAiClient
      */
     public function generateCarePlan(array $context): array;
 
+    /**
+     * Thực đơn MỘT ngày, đa dạng, bám nguyên tắc ăn uống của kế hoạch chăm sóc và tránh lặp món gần đây.
+     *
+     * @param  array<string, mixed>  $context  xem DailyPlanService::menuContext()
+     * @return array{breakfast?: string, lunch?: string, dinner?: string, snacks?: string, tip?: string}
+     */
+    public function generateDailyMenu(array $context): array;
+
     /** Tên model để ghi nguồn. */
     public function model(): string;
 }

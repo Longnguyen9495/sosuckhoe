@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Document;
 use App\Models\LabResult;
 use App\Models\Patient;
+use App\Services\Dedup\ActiveMedications;
+use App\Services\Dedup\DuplicateMatcher;
 use App\Services\Document\DocumentEncryptionService;
 use App\Services\Document\DocumentIngestService;
 use Illuminate\Http\JsonResponse;
@@ -63,9 +65,13 @@ final class DocumentUploadController extends Controller
 
         return response()->json([
             'status' => $result['status'],
-            'message' => $result['status'] === 'stored_ai_failed' ? 'Đã lưu ảnh nhưng AI chưa đọc được. Có thể thử đọc lại sau.' : null,
+            'message' => match ($result['status']) {
+                'stored_ai_failed' => 'Đã lưu ảnh nhưng AI chưa đọc được. Có thể thử đọc lại sau.',
+                'duplicate', 'stored_retake' => $result['message'],
+                default => null,
+            },
             'data' => $this->present($patient, $result['document']),
-        ], 201);
+        ], $result['status'] === 'duplicate' ? 200 : 201);
     }
 
     /** Xoá phiếu: xoá file mã hoá, kết quả xét nghiệm tách từ phiếu. */
@@ -83,8 +89,11 @@ final class DocumentUploadController extends Controller
         return response()->json(['message' => 'Đã xoá phiếu và ảnh.']);
     }
 
-    /** Thuốc AI đọc được từ các phiếu chưa đưa vào lịch. */
-    public function pendingMedications(Patient $patient): JsonResponse
+    /**
+     * Thuốc AI đọc được từ các phiếu chưa đưa vào lịch. Thuốc đã có trong đơn đang dùng, hoặc đã có ở phiếu
+     * tải lên trước (cùng đơn chụp nhiều lần), được đánh dấu `duplicate` để giao diện bỏ chọn sẵn.
+     */
+    public function pendingMedications(Patient $patient, ActiveMedications $active): JsonResponse
     {
         Gate::authorize('view', $patient);
 
@@ -92,18 +101,44 @@ final class DocumentUploadController extends Controller
             ->where('patient_id', $patient->id)
             ->whereNull('prescription_id')
             ->where('ai_status', 'done')
-            ->orderByDesc('document_date')
+            ->orderBy('created_at')->orderBy('id')
             ->get()
             ->filter(fn (Document $d) => ! empty($d->analysis['medications']) && empty($d->analysis['medications_dismissed']));
 
-        return response()->json(['data' => $documents->map(fn (Document $d) => [
-            'document_id' => $d->id,
-            'type' => $d->type,
-            'title' => $d->analysis['title'] ?? $d->department ?? 'Phiếu khám',
-            'document_date' => $d->document_date?->toDateString(),
-            'doctor_name' => $d->doctor_name,
-            'medications' => $d->analysis['medications'],
-        ])->values()]);
+        $current = $active->items($patient->id);
+        $seen = []; // [tên thuốc, tiêu đề phiếu] ở các phiếu trước
+        $data = $documents->map(function (Document $d) use ($active, $current, &$seen) {
+            $title = $d->analysis['title'] ?? $d->department ?? 'Phiếu khám';
+            $meds = array_map(function (array $m) use ($active, $current, $seen, $d) {
+                $inUse = $active->match($current, (string) ($m['drug_name'] ?? ''));
+                $earlier = $inUse ? null : collect($seen)->first(fn ($s) => DuplicateMatcher::sameDrug($s[0], $m['drug_name'] ?? ''));
+                $m['duplicate'] = match (true) {
+                    $inUse !== null => ['reason' => 'active', 'label' => ActiveMedications::label($inUse)],
+                    $earlier !== null => ['reason' => 'pending', 'label' => 'Trùng với “'.$earlier[1].'”'],
+                    // Bản chụp lại: AI có thể đọc tên thuốc hơi khác lần trước nên vẫn bỏ chọn sẵn cả phiếu.
+                    $d->duplicate_of_id !== null => ['reason' => 'retake', 'label' => 'Bản chụp lại của phiếu đã có'],
+                    default => null,
+                };
+
+                return $m;
+            }, $d->analysis['medications']);
+            // Ghi nhận sau khi xét cả phiếu: nhiều dòng cùng thuốc trong MỘT phiếu (VD các mũi insulin) không tính là trùng.
+            foreach ($d->analysis['medications'] as $m) {
+                $seen[] = [(string) ($m['drug_name'] ?? ''), $title];
+            }
+
+            return [
+                'document_id' => $d->id,
+                'type' => $d->type,
+                'title' => $title,
+                'document_date' => $d->document_date?->toDateString(),
+                'doctor_name' => $d->doctor_name,
+                'duplicate_of_id' => $d->duplicate_of_id,
+                'medications' => $meds,
+            ];
+        });
+
+        return response()->json(['data' => $data->sortByDesc('document_date')->values()]);
     }
 
     /** Bỏ qua thuốc của một phiếu (VD ảnh vỏ hộp, đơn cũ đã hết). */

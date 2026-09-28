@@ -2,13 +2,14 @@
 
 namespace App\Services\Schedule;
 
-use App\Models\CarePlan;
 use App\Models\Event;
 use App\Models\Log;
 use App\Models\MonitoringPlan;
 use App\Models\Patient;
 use App\Models\Reading;
 use App\Models\ScheduleItem;
+use App\Services\CarePlan\CarePlanService;
+use App\Services\CarePlan\DailyPlanService;
 use Carbon\CarbonImmutable;
 
 /**
@@ -24,14 +25,18 @@ final class DayPlanBuilder
         'dinner' => 'Ăn tối',
     ];
 
-    public function __construct(private readonly PatientScheduleOrchestrator $orchestrator)
-    {
-    }
+    public function __construct(
+        private readonly PatientScheduleOrchestrator $orchestrator,
+        private readonly DailyPlanService $dailyPlans,
+    ) {}
 
     public function build(Patient $patient, CarbonImmutable $day): array
     {
         $date = $day->toDateString();
         $routine = $this->orchestrator->activeRoutine($patient->id, $patient->tenant_id, $day);
+        // Thực đơn của ngày này từ kế hoạch chăm sóc gần nhất (thực đơn 7 ngày theo thứ, hoặc thực đơn mẫu).
+        $daily = $this->dailyPlans->forDay($patient, $day);
+        $menu = $daily['menu'] ?? CarePlanService::menuFor(null, $day);
 
         $logs = Log::where('patient_id', $patient->id)->whereDate('log_date', $date)->get();
         $logsByItem = $logs->whereNotNull('schedule_item_id')->keyBy('schedule_item_id');
@@ -79,16 +84,13 @@ final class DayPlanBuilder
                 ];
             }
 
-            // Gợi ý món từ kế hoạch chăm sóc gần nhất (nếu có).
-            $sampleDay = CarePlan::where('patient_id', $patient->id)->latest('created_at')->first()?->content['diet']['sample_day'] ?? [];
-
             foreach (self::MEALS as $anchor => $label) {
                 $items[] = [
                     'key' => 'meal:'.$anchor,
                     'time' => $routine[$anchor],
                     'type' => 'meal',
                     'title' => $label,
-                    'diet_note' => $sampleDay[$anchor] ?? null,
+                    'diet_note' => $menu[$anchor] ?? null,
                     'countable' => false,
                     'done' => false,
                 ];
@@ -119,6 +121,9 @@ final class DayPlanBuilder
             ],
             'readings' => $readings->map(fn (Reading $r) => $this->presentReading($r))->values(),
             'day_log' => $this->dayLogMeta($logs),
+            'menu' => $menu,
+            // Bài tập của ngày (luân phiên), mẹo ăn uống, nguồn thực đơn: ai | weekly. null khi chưa có kế hoạch chăm sóc.
+            'daily' => $daily === null ? null : ['exercises' => $daily['exercises'], 'insulin_tips' => $daily['insulin_tips'], 'tip' => $daily['tip'], 'source' => $daily['source']],
             'events' => $this->eventsOn($patient, $day),
         ];
     }
@@ -230,6 +235,7 @@ final class DayPlanBuilder
             'water_cups' => (int) ($meta['water_cups'] ?? 0),
             'symptoms' => array_values($meta['symptoms'] ?? []),
             'note' => (string) ($meta['note'] ?? ''),
+            'exercises_done' => array_values($meta['exercises_done'] ?? []),
         ];
     }
 

@@ -36,7 +36,10 @@ final class CarePlanService
     {
         $context = $this->context($patient);
         @set_time_limit(max(60, (int) config('services.ai.timeout', 150) + 30));
-        [$content] = $this->scrubber->scrub($this->normalize($this->ai->generateCarePlan($context)));
+        [$content] = $this->scrubber->scrub($this->normalize($this->ai->generateCarePlan($context + ['exercise_library' => ExerciseLibrary::forPrompt()])));
+        if ($content['exercises'] === []) {
+            $content['exercises'] = array_map(fn (array $e) => ['id' => $e['id'], 'why' => null, 'frequency' => null], ExerciseLibrary::suggest($context));
+        }
 
         return CarePlan::create([
             'patient_id' => $patient->id,
@@ -50,6 +53,44 @@ final class CarePlanService
             'model' => $this->ai->model(),
             'generated_by' => $userId,
         ]);
+    }
+
+    /**
+     * Bài tập của kế hoạch, kèm video. Kế hoạch lập trước khi có mục bài tập thì gợi ý theo quy tắc
+     * từ dữ liệu hiện tại, để người bệnh không phải lập lại.
+     *
+     * @return list<array>
+     */
+    public function exercises(CarePlan $plan, Patient $patient): array
+    {
+        $picked = $plan->content['exercises'] ?? null;
+        if (! is_array($picked)) {
+            return ExerciseLibrary::suggest($this->context($patient));
+        }
+
+        return array_values(array_map(
+            fn (array $e) => ExerciseLibrary::present($e['id'], $e['why'] ?? null, $e['frequency'] ?? null),
+            array_filter($picked, fn ($e) => is_array($e) && is_string($e['id'] ?? null) && ExerciseLibrary::exists($e['id'])),
+        ));
+    }
+
+    /**
+     * Thực đơn của một ngày: theo thứ trong tuần nếu kế hoạch có thực đơn 7 ngày, không thì thực đơn mẫu.
+     *
+     * @return array{breakfast: ?string, lunch: ?string, dinner: ?string, snacks: ?string}
+     */
+    public static function menuFor(?array $content, CarbonImmutable $day): array
+    {
+        $diet = $content['diet'] ?? [];
+        $week = $diet['weekly_menu'] ?? [];
+        $menu = count($week) === 7 ? $week[$day->dayOfWeekIso - 1] : ($diet['sample_day'] ?? []);
+
+        return [
+            'breakfast' => $menu['breakfast'] ?? null,
+            'lunch' => $menu['lunch'] ?? null,
+            'dinner' => $menu['dinner'] ?? null,
+            'snacks' => $menu['snacks'] ?? null,
+        ];
     }
 
     /** Dữ liệu gửi AI — đã ẩn danh. */
@@ -125,6 +166,17 @@ final class CarePlanService
         $list = fn ($v, int $max = 12) => array_values(array_slice(array_filter(array_map(fn ($x) => $str($x), is_array($v) ? $v : [])), 0, $max));
         $diet = is_array($a['diet'] ?? null) ? $a['diet'] : [];
         $sample = is_array($diet['sample_day'] ?? null) ? $diet['sample_day'] : [];
+        // AI hay ghi kèm tên thứ vào món ("Thứ Hai — …"): bỏ đi, màn hình đã có tên thứ.
+        $dish = fn ($v) => $str(is_string($v) ? preg_replace('/^\s*(Thứ\s+\S+|Chủ\s+nhật|T[2-7]|CN)\s*[—–:\-]\s*/iu', '', $v) : $v);
+        $meals = fn (array $d) => [
+            'breakfast' => $dish($d['breakfast'] ?? null),
+            'lunch' => $dish($d['lunch'] ?? null),
+            'dinner' => $dish($d['dinner'] ?? null),
+            'snacks' => $dish($d['snacks'] ?? null),
+        ];
+        // Thực đơn 7 ngày (Thứ Hai → Chủ nhật); bỏ ngày trống, thiếu ngày thì menuFor() dùng thực đơn mẫu.
+        $weekly = array_map($meals, array_slice(array_values(array_filter($diet['weekly_menu'] ?? [], 'is_array')), 0, 7));
+        $weekly = array_values(array_filter($weekly, fn ($d) => array_filter($d) !== []));
 
         return [
             'summary' => $str($a['summary'] ?? null, 1200),
@@ -140,14 +192,16 @@ final class CarePlanService
                 'limit' => $list($diet['limit'] ?? []),
                 'avoid' => $list($diet['avoid'] ?? []),
                 'drug_food_notes' => $list($diet['drug_food_notes'] ?? []),
-                'sample_day' => [
-                    'breakfast' => $str($sample['breakfast'] ?? null),
-                    'lunch' => $str($sample['lunch'] ?? null),
-                    'dinner' => $str($sample['dinner'] ?? null),
-                    'snacks' => $str($sample['snacks'] ?? null),
-                ],
+                'sample_day' => $meals($sample),
+                'weekly_menu' => count($weekly) === 7 ? $weekly : [],
             ],
             'lifestyle' => $list($a['lifestyle'] ?? []),
+            // Chỉ nhận bài có trong thư viện; bỏ trùng, tối đa 5 bài.
+            'exercises' => array_values(array_slice(array_column(array_filter(array_map(fn ($e) => is_array($e) && is_string($e['id'] ?? null) && ExerciseLibrary::exists($e['id']) ? [
+                'id' => $e['id'],
+                'why' => $str($e['why'] ?? null, 300),
+                'frequency' => $str($e['frequency'] ?? null, 120),
+            ] : null, is_array($a['exercises'] ?? null) ? $a['exercises'] : [])), null, 'id'), 0, 5)),
             'monitoring' => array_values(array_filter(array_map(fn ($m) => is_array($m) && $str($m['what'] ?? null) ? [
                 'what' => $str($m['what']),
                 'how_often' => $str($m['how_often'] ?? null),

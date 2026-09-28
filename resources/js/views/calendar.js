@@ -2,6 +2,7 @@
 import { api, apiBlob } from '../core/api.js';
 import { todayVN, parseDate, monthLabel, dm, WD, addDays } from '../core/format.js';
 import { esc, delegate, skeleton, errorBox } from '../ui/dom.js';
+import { icon } from '../ui/icons.js';
 import { toast } from '../ui/shell.js';
 import { drawChart } from '../ui/chart.js';
 import { EVENT_META } from './common.js';
@@ -25,7 +26,7 @@ export async function renderCalendar(ctx) {
             <div class="sec-title"><h2>Các mốc quan trọng</h2><span id="ev-count"></span></div>
             <div class="card" id="events"></div>
             <div class="sec-title"><h2>Dữ liệu cho bác sĩ</h2></div>
-            <div class="card row wrap-row"><button class="btn ghost sm" data-act="csv">⬇ Bảng chỉ số (.csv)</button><span class="small muted">Mang theo khi tái khám hoặc gửi cho bác sĩ.</span></div>`,
+            <div class="card row wrap-row"><button class="btn ghost sm" data-act="csv">${icon('download', { size: 16 })} Bảng chỉ số (.csv)</button><span class="small muted">Mang theo khi tái khám hoặc gửi cho bác sĩ.</span></div>`,
     });
 
     async function drawMonth() {

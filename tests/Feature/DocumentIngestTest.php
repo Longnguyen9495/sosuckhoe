@@ -104,6 +104,11 @@ class DocumentIngestTest extends TestCase
                 return [];
             }
 
+            public function generateDailyMenu(array $context): array
+            {
+                return [];
+            }
+
             public function model(): string
             {
                 return 'test';
@@ -145,9 +150,12 @@ class DocumentIngestTest extends TestCase
             ->assertJsonStructure(['data' => ['disclaimer', 'content' => ['summary', 'key_issues', 'diet', 'monitoring', 'warning_signs']]]);
         $this->withHeaders($this->auth)->getJson("/api/v1/patients/{$this->patientId}/care-plan")->assertOk()->assertJsonPath('data.sources.medications', 1);
 
-        $day = $this->withHeaders($this->auth)->getJson("/api/v1/patients/{$this->patientId}/day/{$today}")->json('data.items');
-        $breakfast = collect($day)->firstWhere('key', 'meal:breakfast');
-        $this->assertSame('Cháo yến mạch + 1 quả trứng', $breakfast['diet_note']);
+        // Thực đơn 7 ngày: món của đúng thứ hôm nay, cả trên mốc bữa ăn lẫn thẻ "Thực đơn hôm nay".
+        $expected = app(MedicalAiClient::class)->generateCarePlan([])['diet']['weekly_menu'][now()->dayOfWeekIso - 1]['breakfast'];
+        $day = $this->withHeaders($this->auth)->getJson("/api/v1/patients/{$this->patientId}/day/{$today}")->json('data');
+        $this->assertSame($expected, collect($day['items'])->firstWhere('key', 'meal:breakfast')['diet_note']);
+        $this->assertSame($expected, $day['menu']['breakfast']);
+        $this->assertSame('1 hộp sữa chua không đường', $day['menu']['snacks']);
     }
 
     public function test_care_plan_context_is_anonymous(): void

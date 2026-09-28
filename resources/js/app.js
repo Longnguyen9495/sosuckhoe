@@ -8,10 +8,13 @@ import { createRouter } from './core/router.js';
 import { todayVN } from './core/format.js';
 import { openSheet, closeSheet, toast, hero, tabbar } from './ui/shell.js';
 import { esc, delegate } from './ui/dom.js';
+import { icon } from './ui/icons.js';
 import { syncOfflineQueue, registerServiceWorker } from './core/offline.js';
+import { FEATURES } from './core/features.js';
 
 import { renderLogin, renderStart, renderTwoFactor, renderTenants, renderPatients } from './views/auth.js';
 import { renderLanding } from './views/landing.js';
+import { renderShared } from './views/shared.js';
 import { renderUpload, renderReview } from './views/upload.js';
 import { renderMe } from './views/me.js';
 import { renderToday, openQuickReading } from './views/today.js';
@@ -80,6 +83,8 @@ const router = createRouter({
     '/': () => renderLanding(ctx),
     '/start': () => (getToken() ? router.navigate('/me') : renderStart(ctx)),
     '/login': () => (getToken() ? router.navigate('/today') : renderLogin(ctx)),
+    // Link chia sẻ hồ sơ: mở được khi chưa đăng nhập (dược sĩ, bác sĩ, người thân).
+    '/s/:token': (params) => renderShared(ctx, params),
     '/me': needsAuth(renderMe, { patient: false }),
     '/upload': needsAuth(renderUpload),
     '/review': needsAuth(renderReview),
@@ -93,17 +98,17 @@ const router = createRouter({
     '/calendar': needsAuth(renderCalendar),
     '/plan': needsAuth(renderPlan),
     '/records': needsAuth(renderRecords),
-    '/ask': needsAuth(renderAsk),
+    '/ask': FEATURES.doctor ? needsAuth(renderAsk) : () => router.navigate('/today'),
     '/settings': needsAuth(renderSettings),
     '/settings/thresholds': needsAuth(renderThresholds),
     '/rx/new': needsAuth(renderRxNew),
     '/rx/scan': needsAuth(renderRxScan),
-    '/doctor': needsAuth(renderDoctor, { patient: false }),
+    '/doctor': FEATURES.doctor ? needsAuth(renderDoctor, { patient: false }) : () => router.navigate('/today'),
     '*': () => {
         if (!getToken()) return router.navigate('/');
         if (!store.get('tenant')) return router.navigate('/tenants');
         if (!store.get('patient')) return router.navigate('/patients');
-        return router.navigate(store.get('patient').access_role === 'doctor' ? '/doctor' : '/today');
+        return router.navigate(FEATURES.doctor && store.get('patient').access_role === 'doctor' ? '/doctor' : '/today');
     },
 });
 ctx.router = router;
@@ -155,8 +160,8 @@ async function logout(callApi = true) {
 /* ---------------- Nút + giữa thanh tab: tải ảnh hoặc ghi chỉ số ---------------- */
 function openFabMenu() {
     const sheet = openSheet(`<div id="fab-menu"><h3>Bạn muốn làm gì?</h3>
-        <button class="choice" data-act="upload"><span class="avatar">📷</span><span class="grow"><b>Tải ảnh khám bệnh</b><br><span class="small muted">Đơn thuốc, xét nghiệm, giấy khám — AI đọc giúp</span></span></button>
-        <button class="choice" data-act="reading"><span class="avatar">🩸</span><span class="grow"><b>Ghi chỉ số</b><br><span class="small muted">Đường huyết, huyết áp, cân nặng</span></span></button></div>`);
+        <button class="choice" data-act="upload"><span class="avatar">${icon('camera', { size: 20 })}</span><span class="grow"><b>Tải ảnh khám bệnh</b><br><span class="small muted">Đơn thuốc, xét nghiệm, giấy khám — AI đọc giúp</span></span></button>
+        <button class="choice" data-act="reading"><span class="avatar">${icon('droplet', { size: 20 })}</span><span class="grow"><b>Ghi đường huyết</b><br><span class="small muted">Chỉ cần gõ số, VD 6,5</span></span></button></div>`);
     delegate(sheet.querySelector('#fab-menu'), {
         upload: () => { closeSheet(); router.navigate('/upload'); },
         reading: () => { closeSheet(); openQuickReading(ctx); },
@@ -167,10 +172,12 @@ ctx.setSession = setSession;
 /* ---------------- Sự kiện toàn cục ---------------- */
 delegate(document.body, {
     nav: (el) => router.navigate(el.dataset.to),
-    'choose-patient': () => choosePatient(),
+    'choose-patient': () => { if (FEATURES.caregiver) choosePatient(); },
     'quick-reading': () => openQuickReading(ctx),
     fab: () => openFabMenu(),
 });
+// Đổi màn thì đóng bảng trượt đang mở (không để bảng nằm đè lên màn mới).
+window.addEventListener('hashchange', () => closeSheet());
 window.addEventListener('api:unauthorized', () => logout(false));
 window.addEventListener('api:requires2fa', () => router.navigate('/2fa'));
 const setOnline = (value) => {

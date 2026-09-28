@@ -2,7 +2,9 @@
 import { api } from '../core/api.js';
 import { dmy } from '../core/format.js';
 import { esc, delegate, skeleton, errorBox } from '../ui/dom.js';
+import { icon } from '../ui/icons.js';
 import { toast } from '../ui/shell.js';
+import { mountShareSection } from './share.js';
 
 export async function renderMe(ctx) {
     const screen = ctx.render({
@@ -12,11 +14,12 @@ export async function renderMe(ctx) {
         body: `<div class="card lift" id="me-card">${skeleton(2)}</div>
             <div id="pw-warn"></div>
             <div class="quick">
-                <button class="quick-btn" data-act="nav" data-to="/upload"><span>📷</span>Tải ảnh khám bệnh</button>
-                <button class="quick-btn" data-act="nav" data-to="/plan"><span>🥗</span>Phác đồ & chế độ ăn</button>
-                <button class="quick-btn" data-act="nav" data-to="/records"><span>📁</span>Hồ sơ & kết quả</button>
-                <button class="quick-btn" data-act="nav" data-to="/today"><span>📅</span>Lịch hôm nay</button>
+                <button class="quick-btn" data-act="nav" data-to="/upload"><span>${icon('camera', { size: 24 })}</span>Tải ảnh khám bệnh</button>
+                <button class="quick-btn" data-act="nav" data-to="/plan"><span>${icon('salad', { size: 24 })}</span>Phác đồ & chế độ ăn</button>
+                <button class="quick-btn" data-act="nav" data-to="/records"><span>${icon('folder', { size: 24 })}</span>Hồ sơ & kết quả</button>
+                <button class="quick-btn" data-act="nav" data-to="/today"><span>${icon('calendar', { size: 24 })}</span>Lịch hôm nay</button>
             </div>
+            <section class="blk" id="share-box"></section>
             <div class="sec-title"><h2>Đổi mật khẩu</h2></div>
             <form class="card" id="pw-form" novalidate>
                 <div class="field"><label for="cur">Mật khẩu hiện tại</label><input id="cur" type="password" autocomplete="current-password" required></div>
@@ -37,9 +40,9 @@ export async function renderMe(ctx) {
             const { data } = await api('/auth/me');
             screen.querySelector('#me-card').innerHTML = `<div class="row"><span class="avatar big">${esc((data.name || '?').trim().split(/\s+/).pop().charAt(0).toUpperCase())}</span>
                 <div class="grow"><h3 style="margin:0">${esc(data.name)}</h3>
-                <div class="small ink2">📱 ${esc(data.phone || '')}${data.birth_date ? ` · 🎂 ${dmy(data.birth_date)}` : ''}</div></div></div>`;
+                <div class="small ink2">${icon('phone', { size: 14 })} ${esc(data.phone || '')}${data.birth_date ? ` · ${icon('cake', { size: 14 })} ${dmy(data.birth_date)}` : ''}</div></div></div>`;
             screen.querySelector('#pw-warn').innerHTML = data.uses_default_password
-                ? '<div class="alert mua"><div class="ico">🔑</div><div><b>Bạn đang dùng mật khẩu mặc định</b><p>Mật khẩu mặc định dễ đoán (tên + 4 số cuối SĐT). Nên đổi sang mật khẩu riêng ở bên dưới.</p></div></div>'
+                ? `<div class="alert mua"><div class="ico">${icon('key', { size: 18 })}</div><div><b>Bạn đang dùng mật khẩu mặc định</b><p>Mật khẩu mặc định dễ đoán (tên + 4 số cuối SĐT). Nên đổi sang mật khẩu riêng ở bên dưới.</p></div></div>`
                 : '';
         } catch (error) {
             screen.querySelector('#me-card').innerHTML = errorBox(error.message);
@@ -65,6 +68,8 @@ export async function renderMe(ctx) {
             button.disabled = false;
         }
     });
+
+    mountShareSection(screen.querySelector('#share-box'), ctx);
 
     delegate(screen, {
         logout: () => ctx.logout(),

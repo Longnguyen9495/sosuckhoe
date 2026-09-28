@@ -16,6 +16,7 @@ class Document extends TenantModel
         'doctor_name',
         'analysis',
         'duplicate_of_id',
+        'content_hash',
         'ai_status',
         'ai_error',
         'prescription_id',

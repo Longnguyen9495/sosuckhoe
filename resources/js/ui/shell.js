@@ -3,18 +3,21 @@
  * bảng trượt từ dưới lên, hộp xác nhận, phóng ảnh, thông báo ngắn.
  */
 import { esc } from './dom.js';
+import { icon } from './icons.js';
+import { FEATURES } from '../core/features.js';
 
+/** Icon khung ứng dụng (Lucide, xem ui/icons.js). */
 export const ICONS = {
-    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
-    cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>',
-    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
-    pill: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.2 8.1l5.6 7.8"/></svg>',
-    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
-    chat: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
-    moon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
-    gear: '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
-    user: '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
-    back: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+    home: icon('house', { size: 24 }),
+    cal: icon('calendar', { size: 24 }),
+    plus: icon('plus', { size: 28, stroke: 2.4 }),
+    pill: icon('pill', { size: 24 }),
+    doc: icon('file', { size: 24 }),
+    chat: icon('chat', { size: 22 }),
+    moon: icon('moon', { size: 20 }),
+    gear: icon('settings', { size: 21 }),
+    user: icon('user', { size: 21 }),
+    back: icon('chevron-left', { size: 22, stroke: 2.4 }),
 };
 
 /** Đầu trang tím. `patient` hiện nút chọn bệnh nhân; `back` thay bằng nút quay lại. */
@@ -22,14 +25,19 @@ export function hero({ title, sub = '', patient = null, back = null, online = tr
     const initial = (patient?.full_name || '?').replace(/^(Bà|Ông|Cô|Chú|Anh|Chị)\s+/i, '').trim().charAt(0).toUpperCase() || '?';
     const left = back
         ? `<button class="icon-btn" data-act="nav" data-to="${esc(back)}" aria-label="Quay lại">${ICONS.back}</button><div class="who grow"><b>${esc(title)}</b></div>`
-        : `<button class="who-btn" data-act="choose-patient" aria-label="Đổi người bệnh">
+        : FEATURES.caregiver
+            ? `<button class="who-btn" data-act="choose-patient" aria-label="Đổi người bệnh">
                <span class="avatar">${esc(initial)}</span>
                <span class="who"><b>${esc(patient?.full_name || 'Sổ Sức Khỏe')} ▾</b><small>${patient?.birth_year ? `${new Date().getFullYear() - patient.birth_year} tuổi · ` : ''}Chạm để đổi người bệnh</small></span>
+           </button>`
+            : `<button class="who-btn" data-act="nav" data-to="/me" aria-label="Thông tin cá nhân">
+               <span class="avatar">${esc(initial)}</span>
+               <span class="who"><b>${esc(patient?.full_name || 'Sổ Sức Khỏe')}</b><small>${patient?.birth_year ? `${new Date().getFullYear() - patient.birth_year} tuổi` : 'Sổ theo dõi của bạn'}</small></span>
            </button>`;
     return `<header class="hero">
         <div class="topbar">
             ${left}
-            <button class="icon-btn" data-act="nav" data-to="/ask" aria-label="Hỏi bác sĩ" title="Hỏi bác sĩ">${ICONS.chat}${badge ? '<span class="dot"></span>' : ''}</button>
+            ${FEATURES.doctor ? `<button class="icon-btn" data-act="nav" data-to="/ask" aria-label="Hỏi bác sĩ" title="Hỏi bác sĩ">${ICONS.chat}${badge ? '<span class="dot"></span>' : ''}</button>` : ''}
             <button class="icon-btn" data-act="nav" data-to="/me" aria-label="Thông tin cá nhân" title="Thông tin cá nhân">${ICONS.user}</button>
             <button class="icon-btn" data-act="nav" data-to="/settings" aria-label="Cài đặt" title="Cài đặt">${ICONS.gear}</button>
         </div>
@@ -85,6 +93,7 @@ export function openSheet(innerHtml, onMount) {
     const l = ensureLayers();
     l.sheet.innerHTML = `<div class="grab"></div>${innerHtml}`;
     l.sheetOverlay.hidden = false;
+    document.body.classList.add('sheet-open');
     onMount?.(l.sheet);
     l.sheet.querySelector('input, select, textarea, button')?.focus();
     return l.sheet;
@@ -93,6 +102,7 @@ export function openSheet(innerHtml, onMount) {
 export function closeSheet() {
     if (!layers) return;
     layers.sheetOverlay.hidden = true;
+    document.body.classList.remove('sheet-open');
     layers.sheet.innerHTML = '';
 }
 

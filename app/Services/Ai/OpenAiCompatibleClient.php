@@ -53,6 +53,14 @@ final class OpenAiCompatibleClient implements MedicalAiClient, AiOcrClient
         ]);
     }
 
+    public function generateDailyMenu(array $context): array
+    {
+        return $this->chatJson([
+            ['role' => 'system', 'content' => MedicalPrompts::dailyMenuSystem()],
+            ['role' => 'user', 'content' => "Dữ liệu (JSON):\n".json_encode($context, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)],
+        ]);
+    }
+
     /** Tương thích màn "Chụp đơn" cũ: chỉ lấy danh sách thuốc. */
     public function recognize(string $imageBase64): array
     {

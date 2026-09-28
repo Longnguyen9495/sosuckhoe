@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\V1\DocumentDownloadController;
 use App\Http\Controllers\Api\V1\DocumentUploadController;
 use App\Http\Controllers\Api\V1\DrugController;
 use App\Http\Controllers\Api\V1\InvitationController;
+use App\Http\Controllers\Api\V1\ShareLinkController;
+use App\Http\Controllers\Api\V1\SharedViewController;
 use App\Http\Controllers\Api\V1\LabResultController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\OtpAuthController;
@@ -69,6 +71,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/onboarding/complete', [OnboardingController::class, 'complete']);
     });
 
+    // Xem hồ sơ qua link chia sẻ — KHÔNG đăng nhập; giới hạn số lần gọi theo IP (chống dò mã / dò PIN).
+    Route::get('/shared/{token}', [SharedViewController::class, 'show'])->middleware('throttle:30,1')->name('shared.show');
+    Route::post('/shared/{token}/open', [SharedViewController::class, 'open'])->middleware('throttle:10,1')->name('shared.open');
+    Route::get('/shared-documents/{document}', [SharedViewController::class, 'document'])->middleware('throttle:60,1')->name('shared.document');
+
     // Nội dung điều khoản — công khai để hiện ở màn đăng ký trước khi có tài khoản.
     Route::get('/consents/version', [ConsentController::class, 'currentVersion'])->middleware('throttle:30,1');
     // Ghi / rút đồng ý trong phạm vi tài khoản đang chọn (tenant lấy từ ngữ cảnh, không lấy từ client).
@@ -105,6 +112,12 @@ Route::prefix('v1')->group(function (): void {
 
     // Các route theo dõi hàng ngày: caregiver có thể truy cập
     Route::middleware(['auth:sanctum', 'tenant', 'doctor.2fa', 'audit.patient'])->scopeBindings()->group(function (): void {
+        // Link chia sẻ hồ sơ chỉ xem (người bệnh tự tạo / thu hồi).
+        Route::get('/patients/{patient}/share-links', [ShareLinkController::class, 'index'])->name('patients.share-links.index');
+        Route::get('/patients/{patient}/share-links/pin', [ShareLinkController::class, 'suggestPin'])->name('patients.share-links.pin');
+        Route::post('/patients/{patient}/share-links', [ShareLinkController::class, 'store'])->middleware('throttle:10,1')->name('patients.share-links.store');
+        Route::delete('/patients/{patient}/share-links/{shareLink}', [ShareLinkController::class, 'destroy'])->name('patients.share-links.destroy');
+
         Route::get('/patients/{patient}/day/{date}', [PatientDayController::class, 'day'])->name('patients.day');
         Route::post('/patients/{patient}/logs', [PatientDayController::class, 'storeLog'])->name('patients.logs.store');
 

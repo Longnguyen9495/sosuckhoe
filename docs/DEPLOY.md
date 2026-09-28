@@ -49,3 +49,25 @@ systemctl is-active nginx php8.5-fpm
 Production chỉ seed danh mục: `DrugSeeder`, `TemplateSeeder`, `ContentSeeder`. **Không** seed dữ liệu demo `DemoPatientBaDSeeder`.
 
 Điều khoản đồng ý hiện là bản **nháp**. Ở production chỉ bản đã duyệt mới hiện ra và mới được ghi nhận, nên cần thêm một bản `consent_versions` có `is_draft = 0` sau khi pháp chế duyệt nội dung.
+
+## Lịch chạy tự động (cron)
+
+Thực đơn và bài tập **mỗi ngày một khác**: lệnh `careplan:daily` chạy lúc 04:30 (giờ Việt Nam), khai báo trong `routes/console.php`. Laravel chỉ chạy lịch khi server có cron gọi `schedule:run` mỗi phút — thêm một lần cho user chạy web (VD `rexllm`, cùng nhóm `www-data`):
+
+```bash
+crontab -u rexllm -e
+# thêm dòng:
+* * * * * cd /var/www/sosuckhoe && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Kiểm tra:
+
+```bash
+php artisan schedule:list          # thấy "30 4 * * *  php artisan careplan:daily"
+php artisan careplan:daily         # chạy tay cho hôm nay (mỗi người bệnh ~10–20 giây, có gọi AI)
+php artisan careplan:daily --no-ai # chỉ luân phiên bài tập + thực đơn 7 ngày, không gọi AI
+```
+
+Chưa có cron (hoặc AI lỗi) thì màn Hôm nay vẫn hiện thực đơn 7 ngày của kế hoạch chăm sóc và bài tập luân phiên theo ngày — không trống.
+
+Sau khi deploy bản có thực đơn 7 ngày: kế hoạch chăm sóc cũ chưa có `weekly_menu` — bấm "Lập lại" ở màn Phác đồ (hoặc chạy lại lập kế hoạch) một lần để có thực đơn 7 ngày làm nền.

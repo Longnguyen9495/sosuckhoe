@@ -39,6 +39,22 @@ export function fromUsageRule(med) {
 }
 const TYPES = [['medication', 'Thuốc uống'], ['insulin', 'Insulin / tiêm'], ['topical', 'Bôi / dán'], ['supply', 'Vật tư (kim, que thử…)']];
 
+/**
+ * Lưu đơn thuốc. Máy chủ từ chối thuốc đã có trong đơn đang dùng (409 DUPLICATE_MEDICATION);
+ * hỏi lại người dùng, đồng ý thì gửi lại kèm allow_duplicates. Trả null nếu người dùng không lưu.
+ */
+export async function savePrescription(pid, body) {
+    try {
+        return await api(`/patients/${pid}/prescriptions`, { method: 'POST', body });
+    } catch (error) {
+        if (error.code !== 'DUPLICATE_MEDICATION') throw error;
+        const list = (error.payload.duplicates || []).map((d) => `• ${d.drug_name} (${d.label})`).join('\n');
+        const ok = await confirmDialog(`Các thuốc sau đã có trong lịch uống:\n${list}\n\nThêm nữa sẽ bị nhắc uống 2 lần. Chỉ thêm khi bác sĩ kê thêm đúng thuốc này.`, { ok: 'Vẫn thêm', danger: true });
+        if (!ok) return null;
+        return api(`/patients/${pid}/prescriptions`, { method: 'POST', body: { ...body, allow_duplicates: true } });
+    }
+}
+
 export const blankItem = () => ({ drug_id: null, drug_name: '', dose_text: '', type: 'medication', slots: {}, fixed: [], prescribed_quantity: '', purchased_quantity: '', quantity_unit: 'viên', units_per_day: '', is_long_term: false });
 
 /** Chuyển dữ liệu biểu mẫu thành item gửi API. */
@@ -207,14 +223,15 @@ export async function renderRxNew(ctx) {
         const noTime = items.filter((i) => !i.usage_rule);
         if (noTime.length && !await confirmDialog(`${noTime.map((i) => i.drug_name).join(', ')} chưa có giờ dùng nên sẽ không được nhắc. Vẫn lưu?`, { ok: 'Vẫn lưu' })) return;
         try {
-            await api(`/patients/${pid}/prescriptions`, { method: 'POST', body: {
+            const saved = await savePrescription(pid, {
                 doctor_name: screen.querySelector('#rx-doc').value.trim() || null,
                 prescribed_at: screen.querySelector('#rx-date').value,
                 starts_at: screen.querySelector('#rx-start').value,
                 ends_at: screen.querySelector('#rx-end').value || null,
                 items,
                 document_id: draft?.document_id || null,
-            } });
+            });
+            if (!saved) return;
             toast('Đã lưu đơn. Lịch đã được cập nhật.');
             ctx.go(draft?.back || '/plan');
         } catch (error) { toast(error.message, 'bad'); }
@@ -249,7 +266,7 @@ export async function renderRxScan(ctx) {
                 <div class="field"><label>Tên thuốc</label><input data-li="${i}" data-f="drug_name" value="${esc(l.drug_name)}"></div>
                 <div class="field"><label>Cách dùng (nguyên văn)</label><input data-li="${i}" data-f="dose_text" value="${esc(l.dose_text)}"></div>
                 <div class="field"><label>Số lượng</label><input data-li="${i}" data-f="quantity" value="${esc(l.quantity)}"></div>
-                <div class="small ${l.matched ? 'muted' : ''}" style="${l.matched ? '' : 'color:var(--warn)'}">${l.matched ? '✓ Có trong danh mục thuốc' : '⚠ Không khớp danh mục — kiểm tra kỹ tên thuốc'}</div>
+                <div class="small ${l.matched ? 'muted' : ''}" style="${l.matched ? '' : 'color:var(--warn)'}">${l.matched ? '✓ Có trong danh mục thuốc' : 'Không khớp danh mục — kiểm tra kỹ tên thuốc'}</div>
                 <div class="row" style="margin-top:8px"><button class="btn sm" data-act="ok" data-li="${i}">${l.state === 'ok' ? '✓ Đã xác nhận' : 'Xác nhận dòng này'}</button><button class="btn sm ghost" data-act="skip" data-li="${i}">${l.state === 'skip' ? 'Đã bỏ' : 'Bỏ dòng'}</button></div>
             </div>`).join('')}
             <button class="btn block" data-act="done" ${allDecided && lines.some((l) => l.state === 'ok') ? '' : 'disabled'}>Tiếp tục: chọn giờ dùng</button>

@@ -181,9 +181,12 @@ class PatientDayApiTest extends TestCase
         $this->withAuth()->postJson('/api/v1/patients/' . $this->patientId . '/logs', [
             'log_date' => $today, 'meta' => ['symptoms' => ['hypo']],
         ])->assertCreated();
+        $this->withAuth()->postJson('/api/v1/patients/' . $this->patientId . '/logs', [
+            'log_date' => $today, 'meta' => ['exercises_done' => ['walk_after_meal']],
+        ])->assertCreated();
 
         $dayLog = $this->withAuth()->getJson('/api/v1/patients/' . $this->patientId . '/day/' . $today)->json('data.day_log');
-        $this->assertSame(['water_cups' => 3, 'symptoms' => ['hypo'], 'note' => 'ok'], $dayLog);
+        $this->assertSame(['water_cups' => 3, 'symptoms' => ['hypo'], 'note' => 'ok', 'exercises_done' => ['walk_after_meal']], $dayLog);
     }
 
     public function test_log_rejects_schedule_item_of_another_patient(): void

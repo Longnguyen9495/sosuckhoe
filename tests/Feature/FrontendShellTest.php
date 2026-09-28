@@ -64,7 +64,11 @@ class FrontendShellTest extends TestCase
 
         $this->assertStringContainsString('id="today-screen"', $javascript);
         $this->assertStringContainsString('id="overview-card"', $javascript);
-        $this->assertStringContainsString('id="schedule-card"', $javascript);
+        // Màn Hôm nay chỉ dành cho người bệnh: thực đơn + bài tập của ngày, không còn lịch trong ngày / uống nước.
+        $this->assertStringContainsString('id="menu-today"', $javascript);
+        $this->assertStringContainsString('id="ex-today"', $javascript);
+        $this->assertStringNotContainsString('id="schedule-card"', $javascript);
+        $this->assertStringNotContainsString('id="water-card"', $javascript);
         $this->assertStringContainsString('id="readings-card"', $javascript);
         $this->assertStringContainsString('id="alerts-card"', $javascript);
         $this->assertStringNotContainsString("setLoading('today-content', true)", $javascript);

@@ -43,9 +43,11 @@ JSON;
     "limit": ["Hạn chế"],
     "avoid": ["Tránh"],
     "drug_food_notes": ["Lưu ý giữa thuốc đang dùng và thức ăn / đồ uống"],
-    "sample_day": {"breakfast": "Gợi ý bữa sáng", "lunch": "Gợi ý bữa trưa", "dinner": "Gợi ý bữa tối", "snacks": "Bữa phụ"}
+    "sample_day": {"breakfast": "Gợi ý bữa sáng", "lunch": "Gợi ý bữa trưa", "dinner": "Gợi ý bữa tối", "snacks": "Bữa phụ"},
+    "weekly_menu": [{"breakfast": "Món cụ thể + lượng, VD 1 bát nhỏ phở gà, nhiều rau", "lunch": "…", "dinner": "…", "snacks": "…"}, "… đủ 7 phần tử: phần tử 1 = Thứ Hai … phần tử 7 = Chủ nhật; không ghi tên thứ vào món"]
   },
   "lifestyle": ["Vận động, ngủ, sinh hoạt"],
+  "exercises": [{"id": "id bài tập trong exercise_library", "why": "Vì sao hợp với người bệnh này (căn cứ bệnh / thuốc / chỉ số)", "frequency": "VD: 15 phút sau ăn tối, 5 ngày mỗi tuần"}],
   "monitoring": [{"what": "Chỉ số cần tự theo dõi", "how_often": "Tần suất", "target": "Mục tiêu tham khảo hoặc null"}],
   "medication_notes": ["Nhắc cách dùng thuốc theo đúng đơn — KHÔNG đổi liều"],
   "warning_signs": ["Dấu hiệu cần đi khám ngay"],
@@ -75,6 +77,22 @@ QUY TẮC BẮT BUỘC
 TXT;
     }
 
+    public static function dailyMenuSystem(): string
+    {
+        return <<<'TXT'
+Bạn là chuyên gia dinh dưỡng cho người bệnh Việt Nam (thường là người cao tuổi) ăn uống tại nhà.
+Hãy lên thực đơn cho ĐÚNG MỘT NGÀY (ngày trong trường "date"), trả về JSON:
+{"breakfast": "…", "lunch": "…", "dinner": "…", "snacks": "…", "tip": "1 câu mẹo ăn uống cho hôm nay"}
+
+QUY TẮC BẮT BUỘC
+1. Bám đúng diet_principles, eat_more, limit, avoid, drug_food_notes; tôn trọng dị ứng. Không đưa món trong avoid.
+2. KHÔNG lặp lại món chính đã có trong recent_menus (các ngày gần đây). Đổi nguồn đạm (cá / thịt nạc / gà / trứng / đậu phụ / tôm) và cách nấu (hấp, luộc, kho nhạt, nấu canh, áp chảo ít dầu) giữa các ngày.
+3. Món Việt quen thuộc, dễ nấu, rẻ, hợp mùa; ghi lượng dễ hiểu (VD "nửa bát cơm", "1 miếng cá cỡ lòng bàn tay", "1 bát canh").
+4. Người dùng insulin / thuốc hạ đường huyết: mỗi bữa chính có tinh bột vừa đủ, không bỏ bữa; bữa phụ nhẹ.
+5. Không ghi tên thứ vào món, không khuyên dùng thuốc hay thực phẩm chức năng. Chỉ trả về MỘT đối tượng JSON.
+TXT;
+    }
+
     public static function carePlanSystem(): string
     {
         $schema = self::CARE_PLAN_SCHEMA;
@@ -87,10 +105,11 @@ Dựa DUY NHẤT vào dữ liệu được cung cấp (thuốc đang dùng theo 
 QUY TẮC BẮT BUỘC
 1. Bám sát kết quả xét nghiệm và thuốc đang uống. Mỗi vấn đề trong key_issues phải nêu căn cứ (chỉ số nào, thuốc nào) trong based_on.
 2. KHÔNG thay đổi, thêm, bớt hay ngừng thuốc; KHÔNG đưa ra liều mới. medication_notes chỉ nhắc lại cách dùng đã có trong đơn và lưu ý an toàn chung (VD hạ đường huyết khi dùng insulin).
-3. Chế độ ăn cụ thể, dễ làm, dùng món ăn Việt Nam quen thuộc; chú ý tương tác thuốc – thức ăn của các thuốc đang dùng; tôn trọng dị ứng nếu có.
+3. Chế độ ăn cụ thể, dễ làm, dùng món ăn Việt Nam quen thuộc; chú ý tương tác thuốc – thức ăn của các thuốc đang dùng; tôn trọng dị ứng nếu có. weekly_menu đủ 7 ngày (Thứ Hai → Chủ nhật), món thay đổi giữa các ngày, ghi lượng dễ hiểu (VD "nửa bát cơm", "1 bát canh"), bám đúng nguyên tắc ăn uống ở trên; bữa ăn gần giờ tiêm insulin / uống thuốc hạ đường huyết phải có tinh bột vừa đủ, không bỏ bữa.
 4. Mục tiêu chỉ số ghi là "tham khảo" và khuyên xác nhận với bác sĩ điều trị.
 5. Không chẩn đoán bệnh mới. Nếu dữ liệu quá ít, nói rõ trong summary và giữ lời khuyên ở mức chung.
-6. Câu ngắn, dễ hiểu, xưng hô trung tính. Chỉ trả về MỘT đối tượng JSON.
+6. exercises: chọn 3–5 bài CHỈ từ exercise_library (dùng đúng id, không tự đặt tên bài hay đưa link). Ưu tiên bài hợp với chẩn đoán, thuốc và chỉ số; tránh bài có caution không hợp với người bệnh. Người dùng insulin hoặc thuốc dễ gây hạ đường huyết thì chọn kèm insulin_exercise_tips và nhắc đo đường huyết trước khi tập trong why.
+7. Câu ngắn, dễ hiểu, xưng hô trung tính. Chỉ trả về MỘT đối tượng JSON.
 TXT;
     }
 }

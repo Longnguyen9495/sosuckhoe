@@ -5,8 +5,9 @@
 import { api, apiUpload } from '../core/api.js';
 import { todayVN, dm, addDays } from '../core/format.js';
 import { esc, delegate, skeleton, errorBox } from '../ui/dom.js';
+import { icon } from '../ui/icons.js';
 import { toast, confirmDialog } from '../ui/shell.js';
-import { fromUsageRule } from './rx.js';
+import { fromUsageRule, savePrescription } from './rx.js';
 
 const TYPE_LABEL = { don: 'Đơn thuốc', xn: 'Xét nghiệm', cdha: 'Chẩn đoán hình ảnh', kham: 'Phiếu khám', hd: 'Hướng dẫn', thuoc: 'Vỏ hộp thuốc', khac: 'Giấy tờ khác' };
 const MAX_SIDE = 2200;
@@ -33,10 +34,12 @@ async function prepareImage(file) {
 }
 
 function resultText(res) {
-    if (res.status === 'rejected_identity') return ['bad', '🚫 ' + (res.message || 'Ảnh CCCD / BHYT — không lưu')];
+    if (res.status === 'rejected_identity') return ['bad', (res.message || 'Ảnh CCCD / BHYT — không lưu')];
+    if (res.status === 'duplicate') return ['info', '↺ ' + (res.message || 'Ảnh đã có trong hồ sơ — không lưu lại')];
+    if (res.status === 'stored_retake') return ['info', '↺ Bản chụp lại của phiếu đã có — không nhập lại dữ liệu'];
     const d = res.data;
     if (!d) return ['bad', 'Không lưu được'];
-    if (d.ai_status === 'failed') return ['warn', '⚠ Đã lưu ảnh, AI chưa đọc được'];
+    if (d.ai_status === 'failed') return ['warn', 'Đã lưu ảnh, AI chưa đọc được'];
     if (d.ai_status === 'skipped') return ['info', 'Đã lưu (PDF — chưa đọc tự động)'];
     const parts = [TYPE_LABEL[d.type] || 'Giấy tờ'];
     if (d.medications_count) parts.push(`${d.medications_count} thuốc`);
@@ -53,12 +56,12 @@ export async function renderUpload(ctx) {
         tab: 'records',
         body: `<div class="card lift">
                 <div class="drop" id="drop">
-                    <div class="drop-ico">📷</div>
+                    <div class="drop-ico">${icon('camera', { size: 36 })}</div>
                     <b>Chụp hoặc chọn ảnh</b>
                     <p class="small ink2">Đơn thuốc, phiếu xét nghiệm, siêu âm, giấy ra viện, vỏ hộp thuốc… Chọn được nhiều ảnh một lần.</p>
                     <div class="row wrap-row" style="justify-content:center">
-                        <label class="btn"><input type="file" accept="image/*" capture="environment" data-pick hidden>📸 Chụp ảnh</label>
-                        <label class="btn ghost"><input type="file" accept="image/*,application/pdf" multiple data-pick hidden>🖼️ Chọn từ máy</label>
+                        <label class="btn"><input type="file" accept="image/*" capture="environment" data-pick hidden>${icon('camera', { size: 18 })} Chụp ảnh</label>
+                        <label class="btn ghost"><input type="file" accept="image/*,application/pdf" multiple data-pick hidden>${icon('image', { size: 18 })} Chọn từ máy</label>
                     </div>
                 </div>
                 <ul class="tips small ink2">
@@ -77,14 +80,16 @@ export async function renderUpload(ctx) {
     function draw() {
         screen.querySelector('#queue').innerHTML = queue.length ? `<div class="sec-title"><h2>Ảnh đã chọn</h2><span>${queue.filter((q) => q.state === 'done').length}/${queue.length} xong</span></div>
             <div class="card">${queue.map((q) => `<div class="up-row">
-                <div class="up-thumb">${q.preview ? `<img src="${q.preview}" alt="">` : '📄'}</div>
+                <div class="up-thumb">${q.preview ? `<img src="${q.preview}" alt="">` : icon('file', { size: 22 })}</div>
                 <div class="grow"><b class="up-name">${esc(q.name)}</b>
                     <div class="small ${q.tone ? '' : 'muted'}">${q.state === 'wait' ? 'Đang chờ…' : q.state === 'up' ? '<span class="spin"></span> Đang tải lên & AI đang đọc… (10–30 giây)' : `<span class="chip ${q.tone}">${esc(q.text)}</span>`}</div>
                 </div></div>`).join('')}</div>` : '';
 
         const finished = queue.length && queue.every((q) => q.state === 'done');
-        const meds = queue.reduce((n, q) => n + (q.res?.data?.medications_count || 0), 0);
-        const stored = queue.filter((q) => q.res?.data).length;
+        // Ảnh trùng / bản chụp lại không tính thuốc mới.
+        const fresh = (q) => q.res?.data && !['duplicate', 'stored_retake'].includes(q.res.status);
+        const meds = queue.reduce((n, q) => n + (fresh(q) ? q.res.data.medications_count || 0 : 0), 0);
+        const stored = queue.filter(fresh).length;
         screen.querySelector('#done').innerHTML = finished ? `<div class="card done-card">
                 <h3>Đã xử lý ${queue.length} ảnh</h3>
                 <p class="small ink2" style="margin-top:0">${stored ? `Đã lưu ${stored} giấy tờ vào hồ sơ.` : 'Chưa lưu được giấy tờ nào.'} ${meds ? `AI tìm thấy <b>${meds} thuốc</b> — hãy kiểm tra lại trước khi lập lịch.` : ''}</p>
@@ -109,7 +114,7 @@ export async function renderUpload(ctx) {
             } catch (error) {
                 q.res = { status: 'error', data: null, message: error.message };
             }
-            [q.tone, q.text] = q.res.status === 'error' ? ['bad', `⚠ ${q.res.message}`] : resultText(q.res);
+            [q.tone, q.text] = q.res.status === 'error' ? ['bad', q.res.message] : resultText(q.res);
             q.state = 'done';
             draw();
         }
@@ -141,15 +146,16 @@ export async function renderUpload(ctx) {
 }
 
 /** Gọi AI lập kế hoạch chăm sóc rồi mở màn Phác đồ. */
-export async function generateCarePlan(ctx, { silentFail = false } = {}) {
+/** Lập kế hoạch chăm sóc; xong thì sang `after` (mặc định màn Phác đồ), `after: null` thì vẽ lại màn hiện tại. */
+export async function generateCarePlan(ctx, { silentFail = false, after = '/plan' } = {}) {
     const overlay = document.createElement('div');
     overlay.className = 'busy';
-    overlay.innerHTML = '<div class="busy-panel"><span class="spin big"></span><b>AI đang lập chế độ ăn uống & sinh hoạt</b><p class="small">Dựa trên thuốc đang dùng và kết quả xét nghiệm · khoảng 1 phút</p></div>';
+    overlay.innerHTML = '<div class="busy-panel"><span class="spin big"></span><b>AI đang lên thực đơn, bài tập & chế độ sinh hoạt</b><p class="small">Dựa trên thuốc đang dùng và kết quả xét nghiệm · khoảng 1 phút</p></div>';
     document.body.append(overlay);
     try {
         await api(`/patients/${ctx.patient.id}/care-plan`, { method: 'POST' });
-        toast('Đã lập kế hoạch chăm sóc.');
-        ctx.go('/plan');
+        toast('Đã lập thực đơn, bài tập và kế hoạch chăm sóc.');
+        if (after) ctx.go(after); else ctx.refresh();
         return true;
     } catch (error) {
         if (!silentFail) toast(error.message, 'bad');
@@ -195,7 +201,8 @@ export async function renderReview(ctx) {
                 api(`/patients/${pid}/pending-medications`).then((r) => r.data),
                 api(`/patients/${pid}/prescriptions?date=${todayVN()}`).then((r) => r.data).catch(() => []),
             ]);
-            docs.forEach((d) => d.medications.forEach((m) => { m.on = true; }));
+            // Thuốc đang dùng hoặc đã có ở phiếu khác (cùng đơn chụp nhiều lần) bỏ chọn sẵn.
+            docs.forEach((d) => d.medications.forEach((m) => { m.on = !m.duplicate; }));
             draw();
         } catch (error) {
             screen.querySelector('#docs').innerHTML = errorBox(error.message);
@@ -212,11 +219,13 @@ export async function renderReview(ctx) {
         const total = docs.reduce((n, d) => n + d.medications.filter((m) => m.on).length, 0);
         box.innerHTML = `${docs.map((d, di) => `<div class="card">
                 <div class="row" style="align-items:flex-start"><div class="grow"><h3>${esc(d.title)}</h3>
-                    <div class="small muted">${d.document_date ? dm(d.document_date) : ''}${d.doctor_name ? ` · ${esc(d.doctor_name)}` : ''} · ${TYPE_LABEL[d.type] || ''}</div></div>
+                    <div class="small muted">${d.document_date ? dm(d.document_date) : ''}${d.doctor_name ? ` · ${esc(d.doctor_name)}` : ''} · ${TYPE_LABEL[d.type] || ''}</div>
+                    ${d.duplicate_of_id ? '<span class="chip info" style="margin-top:4px">↺ Bản chụp lại của phiếu đã có</span>' : ''}</div>
                     <button class="btn sm ghost" data-act="edit" data-di="${di}">Sửa</button></div>
                 ${d.medications.map((m, mi) => `<label class="med rv ${m.on ? '' : 'off'}">
                     <input type="checkbox" data-di="${di}" data-mi="${mi}" ${m.on ? 'checked' : ''}>
                     <div class="grow"><b>${esc(m.drug_name)}</b>${m.quantity ? ` <span class="small muted">· ${esc(String(m.quantity).replace('.', ','))} ${esc(m.unit || '')}</span>` : ''}
+                        ${m.duplicate ? `<div><span class="chip warn">↺ ${esc(m.duplicate.label)}</span></div>` : ''}
                         <div class="small ink2">${esc(m.dose_text || '')}</div>
                         <div class="how small">${describeDoses(m.usage_rule)}</div>
                         ${m.duration_days ? `<div class="small muted">Dùng ${m.duration_days} ngày</div>` : ''}
@@ -229,6 +238,13 @@ export async function renderReview(ctx) {
     }
 
     screen.addEventListener('change', (e) => {
+        // Thay đơn cũ: thuốc "đang dùng" sẽ hết hiệu lực cùng đơn cũ, nên chọn lại để đơn mới có thuốc đó.
+        if (e.target.id === 'replace') {
+            docs.forEach((d) => d.medications.forEach((m) => { if (m.duplicate?.reason === 'active') m.on = e.target.checked; }));
+            draw();
+            screen.querySelector('#replace').checked = e.target.checked;
+            return;
+        }
         if (e.target.dataset.mi === undefined) return;
         docs[Number(e.target.dataset.di)].medications[Number(e.target.dataset.mi)].on = e.target.checked;
         draw();
@@ -261,7 +277,7 @@ export async function renderReview(ctx) {
                     const meds = d.medications.filter((m) => m.on);
                     if (!meds.length) continue;
                     const durations = meds.map((m) => m.duration_days).filter(Boolean);
-                    await api(`/patients/${pid}/prescriptions`, { method: 'POST', body: {
+                    const res = await savePrescription(pid, {
                         document_id: d.document_id,
                         doctor_name: d.doctor_name || d.title || null,
                         prescribed_at: d.document_date && d.document_date <= today ? d.document_date : today,
@@ -275,8 +291,8 @@ export async function renderReview(ctx) {
                             quantity_unit: m.unit || null,
                             is_long_term: !m.duration_days,
                         })),
-                    } });
-                    saved += meds.length;
+                    });
+                    if (res) saved += meds.length;
                 }
                 toast(`Đã tạo lịch cho ${saved} thuốc.`);
                 if (!await generateCarePlan(ctx, { silentFail: true })) {

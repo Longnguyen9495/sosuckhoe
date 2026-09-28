@@ -84,3 +84,26 @@ Không thêm bảng mới chỉ để sao chép cấu trúc JavaScript của pro
 - **Lý do:** Gia đình thường là người chụp ảnh đơn thuốc và muốn kiểm tra trước khi đưa cho bác sĩ. Không hợp lý khi ép họ phải đăng nhập 2FA bác sĩ để sử dụng tính năng này.
 - **Kiểm chứng:** `MissingApisTest::test_ai_prescription_draft_caregiver_can_create_and_list` pass khi caregiver tạo draft thành công.
 - **Giới hạn:** `matchDrugs` chỉ ghép tên + hàm lượng, không tính/đổi liều. Người dùng phải xác nhận từng dòng (`confirm`) trước khi lưu thành đơn thuốc thật. Tạo đơn thuốc từ draft vẫn nằm trong nhóm `doctor.2fa` nếu cần.
+
+## ADR-014 — Chống trùng dữ liệu y khoa
+
+- **Bối cảnh:** Người dùng hay chụp một phiếu nhiều lần; AI đọc mỗi ảnh hơi khác nhau (ETHESO / ETIHESO, KCBTƯC / KCBTVC, chẩn đoán gộp hoặc tách dòng). Dữ liệu thật trước khi sửa: 7 xét nghiệm lưu 2 lần, "Viêm gan B-HBsAg (+)" 6 lần, 5 thuốc nằm trong 2 đơn cùng lúc (lịch nhắc uống 2 lần).
+- **Quyết định:**
+  - Ảnh y hệt nhận ra bằng SHA-256 → không lưu, không gọi AI. Bản chụp lại (cùng loại, ngày, tiêu đề, khoa; thuốc / xét nghiệm / chẩn đoán trùng ≥ 80%) → `duplicate_of_id`, không nhập lại dữ liệu. Không tự xoá ảnh.
+  - Thuốc trùng: cảnh báo và bỏ chọn sẵn ở màn Kiểm tra thuốc; máy chủ chặn (409) trừ khi người dùng xác nhận. Không tự gộp vì bác sĩ có thể kê thêm cùng thuốc.
+  - So tên thuốc: cùng hàm lượng, cho lệch 1–2 ký tự (từ ≥ 6 / ≥ 7 chữ) nhưng độ dài hai từ không chênh quá 1 — để Prednison / Prednisolon, Losartan / Valsartan, Metoprolol / Metformin luôn là thuốc khác.
+  - Dương tính "(+)" và âm tính "(-)" không bao giờ coi là trùng.
+- **Dọn dữ liệu cũ:** `php artisan health:dedupe` (chạy thử) rồi `--apply`. Giữ bản ghi đầu tiên; đơn không còn thuốc thì xoá, phiếu gắn với đơn đó chuyển sang đơn còn giữ.
+- **Kiểm chứng:** `DuplicateDetectionTest` (7 tình huống); chạy trên bản sao dữ liệu thật khớp đúng các cặp ảnh trùng ghi trong PLAN.md mục ảnh gốc.
+
+## ADR-015 — Link chia sẻ hồ sơ chỉ xem
+
+- **Bối cảnh:** Người bệnh cần đưa hồ sơ cho dược sĩ, bác sĩ, người thân xem nhanh (thuốc đang dùng, bệnh nền, xét nghiệm, đường huyết) mà người xem không phải tạo tài khoản. Dữ liệu sức khỏe là dữ liệu cá nhân nhạy cảm (Nghị định 13/2023).
+- **Quyết định:**
+  - Người bệnh tự tạo link ở màn Thông tin cá nhân; phải đánh dấu đồng ý (`consented_at`). Hạn 24 giờ / 7 ngày / 30 ngày, thu hồi bất cứ lúc nào; tối đa 10 link đang mở.
+  - Link dạng `/#/s/{mã 40 ký tự}` — phần sau `#` không gửi lên máy chủ nên mã không nằm trong log web. Máy chủ chỉ lưu SHA-256 của mã.
+  - PIN 4–6 số do người bệnh đặt (app gợi ý số ngẫu nhiên), lưu bcrypt, chỉ hiện một lần. Chặn PIN dễ đoán (số lặp, dãy liên tiếp, cặp lặp, năm / ngày sinh, số cuối điện thoại). Sai 5 lần khoá 15 phút; người bệnh thấy cảnh báo. Giới hạn gọi API theo IP.
+  - Trang chia sẻ không có SĐT, CCCD, BHYT; họ tên mặc định chỉ chữ cái đầu. Ảnh phiếu chỉ khi người bệnh bật, tải qua phiên xem 30 phút (header `X-Share-Session`).
+  - Link sai / hết hạn / đã thu hồi trả cùng một thông báo 404. Phản hồi `no-store`, `noindex`, `no-referrer`. Mỗi lượt mở ghi thời điểm, IP đã che phần cuối, loại thiết bị.
+  - Trang công khai gọi API bằng `fetch` riêng (không gửi token của người đang dùng máy; lỗi 401 do sai PIN không làm đăng xuất).
+- **Kiểm chứng:** `ShareLinkTest` (6 tình huống: không lộ định danh, PIN yếu, khoá sau 5 lần sai, thu hồi / hết hạn, ảnh phiếu theo quyền, bắt buộc đồng ý); `TenantIsolationSweepTest` quét cả route `share-links`.

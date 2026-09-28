@@ -4,6 +4,7 @@
  */
 import { getToken } from '../core/api.js';
 import { delegate } from '../ui/dom.js';
+import { icon } from '../ui/icons.js';
 
 const STEPS = [
     ['1', 'Nhập tên, số điện thoại, ngày sinh', 'Không cần mã OTP. Hệ thống tạo sổ sức khỏe và mật khẩu cho bạn ngay.'],
@@ -12,10 +13,10 @@ const STEPS = [
 ];
 
 const FEATURES = [
-    ['💊', 'Lịch uống thuốc tự động', 'Trước ăn, sau ăn, trước khi ngủ — xếp đúng theo đơn và giờ sinh hoạt của bạn, có nhắc giờ.'],
-    ['🧪', 'Đọc kết quả xét nghiệm', 'Chỉ số cao / thấp được đánh dấu rõ, lưu theo ngày để so sánh các lần khám.'],
-    ['🥗', 'Chế độ ăn theo chỉ số', 'Nên ăn, nên tránh, thực đơn mẫu một ngày — tính đến tương tác giữa thuốc và thức ăn.'],
-    ['📅', 'Nhắc tái khám', 'Ngày hẹn trên phiếu được đưa vào lịch, kèm việc cần chuẩn bị và câu nên hỏi bác sĩ.'],
+    ['pill', 'Lịch uống thuốc tự động', 'Trước ăn, sau ăn, trước khi ngủ — xếp đúng theo đơn và giờ sinh hoạt của bạn, có nhắc giờ.'],
+    ['flask', 'Đọc kết quả xét nghiệm', 'Chỉ số cao / thấp được đánh dấu rõ, lưu theo ngày để so sánh các lần khám.'],
+    ['salad', 'Chế độ ăn theo chỉ số', 'Nên ăn, nên tránh, thực đơn mẫu một ngày — tính đến tương tác giữa thuốc và thức ăn.'],
+    ['calendar', 'Nhắc tái khám', 'Ngày hẹn trên phiếu được đưa vào lịch, kèm việc cần chuẩn bị và câu nên hỏi bác sĩ.'],
 ];
 
 const PREVIEW = [
@@ -62,7 +63,7 @@ export function renderLanding(ctx) {
                 <div class="lp-phone" aria-hidden="true">
                     <div class="lp-phone-top"><span class="avatar">D</span><div><b>Chào buổi sáng!</b><small>Hôm nay · 4 việc</small></div></div>
                     <div class="lp-ring"><div><b>75%</b><small>đã xong</small></div></div>
-                    ${PREVIEW.map(([t, title, sub, kind]) => `<div class="lp-item ${kind}"><span class="time">${t}</span><div><b>${title}</b><small>${sub}</small></div>${kind === 'meal' ? '<span class="ico">🍽️</span>' : '<span class="tick">✓</span>'}</div>`).join('')}
+                    ${PREVIEW.map(([t, title, sub, kind]) => `<div class="lp-item ${kind}"><span class="time">${t}</span><div><b>${title}</b><small>${sub}</small></div>${kind === 'meal' ? `<span class="ico">${icon('utensils', { size: 14 })}</span>` : '<span class="tick">✓</span>'}</div>`).join('')}
                 </div>
             </div>
         </section>
@@ -78,13 +79,13 @@ export function renderLanding(ctx) {
         <section class="lp-sec alt" id="features">
             <div class="lp-in">
                 <h2>Mọi thứ về điều trị, gọn trong một sổ</h2>
-                <div class="lp-features">${FEATURES.map(([i, t, d]) => `<div class="lp-card"><span class="lp-ico">${i}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}</div>
+                <div class="lp-features">${FEATURES.map(([i, t, d]) => `<div class="lp-card"><span class="lp-ico">${icon(i, { size: 26 })}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}</div>
             </div>
         </section>
 
         <section class="lp-sec" id="privacy">
             <div class="lp-in lp-privacy">
-                <div class="lp-lock">🔒</div>
+                <div class="lp-lock">${icon('shield', { size: 34 })}</div>
                 <div>
                     <h2>Dữ liệu sức khỏe của bạn được giữ kín</h2>
                     <ul>

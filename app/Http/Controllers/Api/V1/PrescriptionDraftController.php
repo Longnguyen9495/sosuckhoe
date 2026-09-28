@@ -7,6 +7,7 @@ use App\Models\Document;
 use App\Models\Patient;
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
+use App\Services\Dedup\ActiveMedications;
 use App\Services\Schedule\PatientScheduleOrchestrator;
 use App\Services\Schedule\UsageRuleException;
 use App\Services\Schedule\UsageRuleParser;
@@ -26,6 +27,7 @@ final class PrescriptionDraftController extends Controller
     public function __construct(
         private readonly UsageRuleParser $parser,
         private readonly PatientScheduleOrchestrator $orchestrator,
+        private readonly ActiveMedications $activeMedications,
     ) {}
 
     private static function itemRules(): array
@@ -99,7 +101,26 @@ final class PrescriptionDraftController extends Controller
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             // Phiếu (ảnh đơn) mà AI đã đọc ra các thuốc này.
             'document_id' => ['nullable', 'string', Rule::exists('documents', 'id')->where('patient_id', $patient->id)],
+            // Người dùng đã xác nhận muốn thêm dù thuốc đang có trong đơn khác.
+            'allow_duplicates' => ['nullable', 'boolean'],
         ]);
+
+        // Không đưa cùng một thuốc vào lịch hai lần (VD cùng đơn chụp nhiều ảnh): báo lại để người dùng quyết định.
+        if (! ($validated['allow_duplicates'] ?? false)) {
+            $current = $this->activeMedications->items($patient->id);
+            $duplicates = collect($validated['items'])
+                ->map(fn (array $item) => [$item['drug_name'], $this->activeMedications->match($current, $item['drug_name'])])
+                ->filter(fn ($pair) => $pair[1] !== null)
+                ->map(fn ($pair) => ['drug_name' => $pair[0], 'existing' => $pair[1]->drug_name, 'label' => ActiveMedications::label($pair[1])])
+                ->values();
+            if ($duplicates->isNotEmpty()) {
+                return response()->json([
+                    'code' => 'DUPLICATE_MEDICATION',
+                    'message' => 'Thuốc đã có trong đơn đang dùng: '.$duplicates->pluck('drug_name')->unique()->join(', ').'.',
+                    'duplicates' => $duplicates,
+                ], 409);
+            }
+        }
 
         $prescription = DB::transaction(function () use ($validated, $patient) {
             $prescription = Prescription::create([

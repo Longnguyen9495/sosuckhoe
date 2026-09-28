@@ -37,10 +37,13 @@
   --tap: 44px;
   --font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --fs: 15px;
+  /* Để control gốc của trình duyệt (danh sách <select>, lịch, thanh cuộn) theo đúng giao diện. */
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --brand: #8F78FF; --brand-2: #B3A2FF; --brand-deep: #5A40D8; --brand-soft: #2A2446;
     --bg: #13111C; --card: #1E1B2B; --card-2: #252135; --ink: #F1EEFA; --ink-2: #C3BDD9; --muted: #9A94B3; --line: #2F2A42;
     --good: #4FD08E; --good-soft: #153326; --warn: #F2B84B; --warn-soft: #352A12; --bad: #FF7AA2; --bad-soft: #3A1A27; --info: #7FA8FF; --info-soft: #18233D;
@@ -50,6 +53,7 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --brand: #8F78FF; --brand-2: #B3A2FF; --brand-deep: #5A40D8; --brand-soft: #2A2446;
   --bg: #13111C; --card: #1E1B2B; --card-2: #252135; --ink: #F1EEFA; --ink-2: #C3BDD9; --muted: #9A94B3; --line: #2F2A42;
   --good: #4FD08E; --good-soft: #153326; --warn: #F2B84B; --warn-soft: #352A12; --bad: #FF7AA2; --bad-soft: #3A1A27; --info: #7FA8FF; --info-soft: #18233D;

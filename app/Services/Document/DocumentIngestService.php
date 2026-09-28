@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\LabResult;
 use App\Models\Patient;
 use App\Models\PatientCondition;
+use App\Services\Dedup\DuplicateMatcher;
 use App\Services\Privacy\ImageMetadataStripper;
 use App\Services\Privacy\SensitiveDataScrubber;
 use App\Services\Schedule\MedicationScheduleMapper;
@@ -49,6 +50,17 @@ final class DocumentIngestService
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->buffer($binary) ?: 'application/octet-stream';
         $binary = $this->stripper->strip($binary, $mime);
 
+        // Ảnh tải lại y hệt: trả phiếu đã có, không lưu thêm, không gọi AI (đỡ tốn tiền).
+        $hash = hash('sha256', $binary);
+        $same = Document::where('patient_id', $patient->id)->where('content_hash', $hash)->first();
+        if ($same !== null) {
+            return [
+                'status' => 'duplicate',
+                'document' => $same,
+                'message' => 'Ảnh này đã có trong hồ sơ'.($same->document_date ? ' (phiếu ngày '.$same->document_date->format('d/m/Y').')' : '').' nên không lưu lại.',
+            ];
+        }
+
         $analysis = null;
         $aiStatus = 'skipped';
         $aiError = null;
@@ -81,18 +93,22 @@ final class DocumentIngestService
         $path = $this->storage->storeEncryptedContent($binary, $this->extension($mime));
 
         try {
-            $document = DB::transaction(function () use ($patient, $path, $hints, $analysis, $aiStatus, $aiError) {
+            $document = DB::transaction(function () use ($patient, $path, $hash, $hints, $analysis, $aiStatus, $aiError) {
                 $normalized = $analysis !== null ? $this->normalize($analysis) : null;
                 $type = $normalized['document_type'] ?? null;
                 if (! in_array($type, self::TYPES, true)) {
                     $type = in_array($hints['type'] ?? null, self::TYPES, true) ? $hints['type'] : 'khac';
                 }
+                $documentDate = $normalized['document_date'] ?? $hints['document_date'] ?? now()->toDateString();
+                $original = $normalized !== null ? $this->findRetake($patient, $type, $documentDate, $normalized) : null;
 
                 $document = Document::create([
                     'patient_id' => $patient->id,
                     'encrypted_path' => $path,
+                    'content_hash' => $hash,
+                    'duplicate_of_id' => $original?->id,
                     'type' => $type,
-                    'document_date' => $normalized['document_date'] ?? $hints['document_date'] ?? now()->toDateString(),
+                    'document_date' => $documentDate,
                     'department' => $normalized['department'] ?? $normalized['facility'] ?? $hints['department'] ?? $hints['title'] ?? null,
                     'doctor_name' => $normalized['doctor_name'] ?? $hints['doctor_name'] ?? null,
                     'analysis' => [
@@ -112,7 +128,8 @@ final class DocumentIngestService
                     'ai_error' => $aiError,
                 ]);
 
-                if ($normalized !== null) {
+                // Phiếu chụp lại: dữ liệu đã nhập từ phiếu gốc, không tách xét nghiệm / chẩn đoán lần nữa.
+                if ($normalized !== null && $original === null) {
                     $this->storeStructured($patient, $document, $normalized);
                 }
 
@@ -123,7 +140,50 @@ final class DocumentIngestService
             throw $e;
         }
 
+        if ($document->duplicate_of_id !== null) {
+            return ['status' => 'stored_retake', 'document' => $document, 'message' => 'Phiếu này giống một phiếu đã có (cùng ngày, cùng nội dung) nên không nhập lại thuốc, xét nghiệm, chẩn đoán.'];
+        }
+
         return ['status' => $aiStatus === 'failed' ? 'stored_ai_failed' : 'stored', 'document' => $document, 'message' => $aiError];
+    }
+
+    /** Phiếu gốc mà ảnh mới là bản chụp lại (cùng loại, cùng ngày, nội dung gần như giống hệt). */
+    public function findRetake(Patient $patient, string $type, string $date, array $normalized, ?string $exceptId = null): ?Document
+    {
+        $candidates = Document::where('patient_id', $patient->id)
+            ->where('type', $type)
+            ->whereDate('document_date', $date)
+            ->where('ai_status', 'done')
+            ->when($exceptId, fn ($q) => $q->whereKeyNot($exceptId))
+            ->orderBy('created_at')->orderBy('id')
+            ->get();
+        $new = ['type' => $type, 'date' => $date] + $normalized;
+
+        foreach ($candidates as $doc) {
+            if (DuplicateMatcher::sameDocument($new, $this->comparable($doc))) {
+                return $doc->duplicate_of_id !== null ? (Document::find($doc->duplicate_of_id) ?? $doc) : $doc;
+            }
+        }
+
+        return null;
+    }
+
+    /** Dữ liệu của một phiếu đã lưu, cùng dạng với kết quả normalize() để so khớp. */
+    public function comparable(Document $doc): array
+    {
+        $a = $doc->analysis ?? [];
+
+        return [
+            'type' => $doc->type,
+            'date' => $doc->document_date?->toDateString(),
+            'title' => $a['title'] ?? null,
+            'department' => $doc->department,
+            'medications' => $a['medications'] ?? [],
+            'diagnoses' => $a['diagnoses'] ?? [],
+            'findings' => $a['findings'] ?? [],
+            'lab_results' => LabResult::where('document_id', $doc->id)->get(['metric', 'value'])
+                ->map(fn (LabResult $r) => ['name' => $r->metric, 'value' => $r->value])->all(),
+        ];
     }
 
     /** Làm sạch cấu trúc AI trả về: đúng kiểu, cắt độ dài, ngày hợp lệ. */
@@ -210,11 +270,21 @@ final class DocumentIngestService
     {
         $measuredAt = $document->document_date?->toDateString() ?? now()->toDateString();
 
+        // Xét nghiệm đã có (cùng tên, cùng ngày, cùng giá trị — từ phiếu khác hoặc bản chụp khác) thì bỏ qua.
+        // Cùng tên, cùng ngày nhưng khác giá trị vẫn lưu cả hai để người dùng tự đối chiếu với phiếu gốc.
+        $seenLabs = LabResult::where('patient_id', $patient->id)->whereDate('measured_at', $measuredAt)->get(['metric', 'value', 'measured_at'])
+            ->mapWithKeys(fn (LabResult $r) => [DuplicateMatcher::labKey($r->metric, $measuredAt, $r->value) => true])->all();
         foreach ($n['lab_results'] as $r) {
+            $metric = ($r['group'] ? $r['group'].' — ' : '').$r['name'];
+            $key = DuplicateMatcher::labKey($metric, $measuredAt, $r['value']);
+            if (isset($seenLabs[$key])) {
+                continue;
+            }
+            $seenLabs[$key] = true;
             LabResult::create([
                 'patient_id' => $patient->id,
                 'document_id' => $document->id,
-                'metric' => ($r['group'] ? $r['group'].' — ' : '').$r['name'],
+                'metric' => $metric,
                 'value' => $r['value'],
                 'unit' => $r['unit'],
                 'reference_range' => $r['reference_range'],
@@ -223,13 +293,15 @@ final class DocumentIngestService
             ]);
         }
 
-        // Chẩn đoán → bệnh nền (không trùng tên đã có).
+        // Chẩn đoán → bệnh nền, bỏ qua chẩn đoán đã có (cùng tên sau chuẩn hoá, hoặc cùng mã ICD và tên gần giống).
         $existing = PatientCondition::where('patient_id', $patient->id)->pluck('notes')
-            ->map(fn ($notes) => mb_strtolower(trim(explode("\n", (string) $notes)[0])))->all();
+            ->map(fn ($notes) => trim(explode("\n", (string) $notes)[0]))->all();
         foreach ($n['diagnoses'] as $d) {
             $title = $d['name'].($d['icd_code'] ? ' ('.$d['icd_code'].')' : '');
-            if (in_array(mb_strtolower($d['name']), array_map(fn ($t) => preg_replace('/\s*\([^)]*\)$/', '', $t), $existing), true)) {
-                continue;
+            foreach ($existing as $old) {
+                if (DuplicateMatcher::sameDiagnosis($title, $old)) {
+                    continue 2;
+                }
             }
             PatientCondition::create([
                 'patient_id' => $patient->id,
@@ -237,7 +309,7 @@ final class DocumentIngestService
                 'priority' => 'normal',
                 'notes' => $title."\nTheo ".($n['title'] ?? 'phiếu khám').' ngày '.CarbonImmutable::parse($measuredAt)->format('d/m/Y'),
             ]);
-            $existing[] = mb_strtolower($title);
+            $existing[] = $title;
         }
 
         // Hẹn tái khám → mốc lịch.

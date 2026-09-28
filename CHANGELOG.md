@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-28 — Chống trùng dữ liệu, bài tập có video, giao diện điện thoại
+
+### Thêm
+- Chống trùng (`App\Services\Dedup\DuplicateMatcher`, chuẩn hoá bỏ dấu, "typ" / "típ", 10,16 = 10.16, giữ nguyên dương / âm tính):
+  - Ảnh tải lại y hệt (cột mới `documents.content_hash`, SHA-256 sau khi bỏ metadata): trả phiếu đã có, không lưu, không gọi AI.
+  - Bản chụp lại cùng phiếu (cùng loại, ngày, tiêu đề, khoa, nội dung ≥ 80%): gắn `duplicate_of_id`, không nhập lại xét nghiệm / chẩn đoán.
+  - Xét nghiệm cùng tên + ngày + giá trị bỏ qua; khác giá trị thì giữ cả hai, màn Hồ sơ nhắc "Có 2 kết quả khác nhau".
+  - Thuốc: `pending-medications` đánh dấu `duplicate` (đang dùng / trùng phiếu trước / bản chụp lại) → bỏ chọn sẵn; `POST /prescriptions` trả 409 `DUPLICATE_MEDICATION` nếu thuốc đang có trong đơn khác, trừ khi gửi `allow_duplicates`. Nhiều dòng cùng thuốc trong MỘT đơn (các mũi insulin) vẫn hợp lệ.
+  - Lệnh `php artisan health:dedupe [--apply] [--patient=]` dọn dữ liệu trùng đã lưu (mặc định chỉ liệt kê).
+- Bài tập gợi ý có video (thư viện `ExerciseLibrary`, AI chỉ chọn theo id); ô ghi đường huyết một con số; cờ `FEATURES` ẩn phần bác sĩ / người chăm sóc.
+- Thực đơn + bài tập đổi mỗi ngày: bảng `daily_plans`, `DailyPlanService`, lệnh `careplan:daily` (lịch 04:30, cần cron `schedule:run` — xem docs/DEPLOY.md). AI lên thực đơn đúng ngày, tránh lặp món 7 ngày gần nhất; lỗi thì dùng thực đơn 7 ngày (`diet.weekly_menu`). Bài tập luân phiên 2–3 bài / ngày, không cần AI.
+- Màn Hôm nay bố cục mới: tóm tắt (đường huyết · bài tập · bữa tới), đường huyết, thực đơn hôm nay (bữa sắp tới nổi bật, mẹo ăn uống), bài tập hôm nay (đánh dấu đã tập), dấu hiệu bất thường, ghi chú. Bỏ "Lịch trong ngày" và "Uống nước" khỏi màn này.
+- Icon Lucide (`ui/icons.js`, ISC) thay emoji trên các màn người bệnh.
+- Link chia sẻ hồ sơ chỉ xem (màn Thông tin cá nhân → Chia sẻ hồ sơ): hạn dùng, PIN tuỳ chọn (chặn PIN dễ đoán, khoá 15 phút sau 5 lần sai), thu hồi, mã QR, nhật ký lượt xem; trang `#/s/{mã}` cho dược sĩ / bác sĩ xem thuốc đang dùng, bệnh nền, chỉ số bất thường, đường huyết 30 ngày, in / lưu PDF. Xem ADR-015.
+
+### Sửa
+- Chẩn đoán có ngoặc ở cuối ("Viêm gan B-HBsAg (+)") bị lưu lặp lại mỗi lần tải ảnh do phép so sánh cắt mất "(+)".
+- Điện thoại: ô ngày / giờ và thẻ chẩn đoán dài tràn ngang; iOS tự phóng to khi chạm ô nhập (< 16px); vùng an toàn tai thỏ / thanh vuốt; bảng trượt không đóng khi đổi màn.
+
 ## 2026-09-27 — Sổ Sức Khỏe (sosuckhoe): đăng ký nhanh, AI đọc ảnh, chế độ ăn
 
 ### Thêm

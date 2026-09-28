@@ -1,13 +1,14 @@
 /** Hằng số và hàm hiển thị dùng chung cho các màn hình. */
 import { esc } from '../ui/dom.js';
 import { vn } from '../core/format.js';
+import { icon } from '../ui/icons.js';
 
 export const EVENT_META = {
-    appointment: { icon: '🩺', cls: 'kham', color: 'var(--brand)', label: 'Khám' },
-    test: { icon: '🧪', cls: 'xn', color: 'var(--info)', label: 'Xét nghiệm' },
-    purchase: { icon: '🛒', cls: 'mua', color: 'var(--warn)', label: 'Mua thuốc' },
-    vaccination: { icon: '💉', cls: 'good', color: 'var(--good)', label: 'Tiêm phòng' },
-    other: { icon: '📌', cls: 'kham', color: 'var(--muted)', label: 'Khác' },
+    appointment: { icon: icon('stethoscope', { size: 18 }), cls: 'kham', color: 'var(--brand)', label: 'Khám' },
+    test: { icon: icon('flask', { size: 18 }), cls: 'xn', color: 'var(--info)', label: 'Xét nghiệm' },
+    purchase: { icon: icon('cart', { size: 18 }), cls: 'mua', color: 'var(--warn)', label: 'Mua thuốc' },
+    vaccination: { icon: icon('syringe', { size: 18 }), cls: 'good', color: 'var(--good)', label: 'Tiêm phòng' },
+    other: { icon: icon('pin', { size: 18 }), cls: 'kham', color: 'var(--muted)', label: 'Khác' },
 };
 
 export const TYPE_TAG = {
@@ -80,3 +81,58 @@ export function linesToList(text, ordered = false) {
     const tag = ordered ? 'ol' : 'ul';
     return `<${tag}>${items.map((l) => `<li>${esc(l)}</li>`).join('')}</${tag}>`;
 }
+
+/* ---------- Bài tập có video (màn Hôm nay + Phác đồ) ---------- */
+
+/**
+ * Thẻ bài tập. Ảnh video chỉ là nút; bấm mới tải YouTube (xem playVideo).
+ * `done` (true/false) hiện nút "Đã tập" để đánh dấu trong ngày; null thì không hiện.
+ */
+export function exerciseCard(e, { done = null, compact = false } = {}) {
+    return `<article class="ex-card ${compact ? 'compact' : ''} ${done ? 'done' : ''}">
+        <button type="button" class="ex-video" data-act="play-video" data-yt="${esc(e.youtube_id)}" aria-label="Xem video: ${esc(e.title)}">
+            <img src="https://i.ytimg.com/vi/${esc(e.youtube_id)}/hqdefault.jpg" alt="" loading="lazy"><span class="play" aria-hidden="true">${icon('play', { size: 26, fill: 'currentColor' })}</span>
+        </button>
+        <div class="ex-body">
+            <h3>${esc(e.title)}</h3>
+            <div class="ex-meta"><span class="chip info">${esc(e.intensity)}</span><span class="chip">${esc(e.frequency)}</span></div>
+            ${compact ? '' : `${e.why ? `<p class="ex-why">${esc(e.why)}</p>` : `<p>${esc(e.summary)}</p>`}
+            <p class="ex-caution">${icon('warn', { size: 14 })} ${esc(e.caution)}</p>
+            <p class="small muted">Video: ${esc(e.source)}</p>`}
+            ${done === null ? '' : `<button type="button" class="btn sm ${done ? '' : 'ghost'} block ex-done" data-act="ex-done" data-id="${esc(e.id)}" aria-pressed="${done}">${done ? `${icon('check-circle', { size: 16 })} Đã tập hôm nay` : `${icon('check', { size: 16 })} Đánh dấu đã tập`}</button>`}
+        </div></article>`;
+}
+
+/** Thay ảnh bằng khung video YouTube (iframe không nằm được trong <button>). */
+export function playVideo(el) {
+    el.outerHTML = `<div class="ex-video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(el.dataset.yt)}?autoplay=1&rel=0&playsinline=1" title="Video bài tập" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>`;
+}
+
+/* ---------- Thực đơn ---------- */
+export const MEALS = [['breakfast', 'sunrise', 'Bữa sáng'], ['lunch', 'sun', 'Bữa trưa'], ['dinner', 'moon', 'Bữa tối'], ['snacks', 'apple', 'Bữa phụ']];
+export const WEEKDAYS = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ nhật'];
+export const WEEKDAY_SHORT = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+/** Chỉ số ngày trong thực đơn tuần (0 = Thứ Hai) của một ngày 'YYYY-MM-DD'. */
+export const menuIndex = (isoDate) => (new Date(`${isoDate}T00:00:00`).getDay() + 6) % 7;
+
+/** Thực đơn 7 ngày của kế hoạch (Thứ Hai → Chủ nhật), hoặc null nếu kế hoạch cũ chỉ có thực đơn mẫu. */
+export function weeklyMenu(content) {
+    const week = content?.diet?.weekly_menu || [];
+    return week.length === 7 ? week : null;
+}
+
+/** Các dòng bữa ăn của một ngày; `times` = giờ ăn theo giờ sinh hoạt (tuỳ chọn). */
+/** Bữa chính sắp tới theo giờ sinh hoạt (sau `now` 'HH:MM'), hoặc null khi đã qua bữa tối. */
+export function nextMeal(times, now) {
+    const found = MEALS.slice(0, 3).find(([k]) => times[k] && String(times[k]).slice(0, 5) > now);
+    return found ? { key: found[0], label: found[2].replace('Bữa ', '').replace(/^./, (x) => x.toUpperCase()), time: String(times[found[0]]).slice(0, 5) } : null;
+}
+
+/** Các bữa của một ngày; `times` = giờ ăn theo giờ sinh hoạt, `nextKey` = bữa sắp tới (làm nổi bật). */
+export function menuRows(menu, times = {}, nextKey = null) {
+    return MEALS.filter(([k]) => menu?.[k]).map(([k, ic, label]) => `<div class="meal-row m-${k} ${k === nextKey ? 'next' : ''}">
+        <span class="meal-ic">${icon(ic, { size: 20 })}</span>
+        <div class="meal-body"><div class="meal-h"><b>${label}</b>${times[k] ? `<small>${esc(String(times[k]).slice(0, 5))}</small>` : ''}${k === nextKey ? '<span class="chip">Sắp tới</span>' : ''}</div>
+        <p>${esc(menu[k])}</p></div></div>`).join('');
+}
+
