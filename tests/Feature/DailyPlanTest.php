@@ -67,6 +67,40 @@ class DailyPlanTest extends TestCase
         $this->assertNotContains(DailyPlanService::TIPS_ID, array_column($day['daily']['exercises'], 'id'), 'Bài kiến thức không nằm trong vòng luân phiên.');
     }
 
+    public function test_running_twice_the_same_day_updates_instead_of_duplicating(): void
+    {
+        $this->artisan('careplan:daily')->assertSuccessful();
+        $this->artisan('careplan:daily')->assertSuccessful();
+        // AI lỗi ở lần chạy sau: vẫn giữ thực đơn AI đã có, không tụt về thực đơn tuần.
+        $this->app->bind(\App\Contracts\MedicalAiClient::class, fn () => new class implements \App\Contracts\MedicalAiClient
+        {
+            public function analyzeDocument(string $binary, string $mime): array
+            {
+                return (new \App\Services\Ai\FakeMedicalAiClient)->analyzeDocument($binary, $mime);
+            }
+
+            public function generateCarePlan(array $context): array
+            {
+                return (new \App\Services\Ai\FakeMedicalAiClient)->generateCarePlan($context);
+            }
+
+            public function generateDailyMenu(array $context): array
+            {
+                throw new \RuntimeException('Dịch vụ AI trả lỗi (503).');
+            }
+
+            public function model(): string
+            {
+                return 'test';
+            }
+        });
+        $this->artisan('careplan:daily')->assertSuccessful()->expectsOutputToContain('thực đơn AI mới');
+
+        app(TenantContext::class)->set(Tenant::findOrFail($this->tenantId));
+        $this->assertSame(1, DailyPlan::count());
+        $this->assertSame('ai', DailyPlan::firstOrFail()->source);
+    }
+
     public function test_exercises_rotate_between_days(): void
     {
         app(TenantContext::class)->set(Tenant::findOrFail($this->tenantId));

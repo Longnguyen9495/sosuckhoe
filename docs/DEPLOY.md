@@ -12,7 +12,7 @@ Cùng VPS và cách làm với Snapask: Nginx + PHP 8.5-FPM, SQLite, SSL Let's E
 | CSDL | SQLite `/var/www/sosuckhoe/database/database.sqlite` |
 | Ảnh phiếu (mã hoá) | `/var/www/sosuckhoe/storage/app/private/documents/` |
 | `.env` | `640 rexllm:www-data`; chứa `APP_KEY`, `AI_API_KEY`, `DOCUMENT_ENCRYPTION_KEY`. **Sao lưu `DOCUMENT_ENCRYPTION_KEY`**, mất khoá này là không mở được ảnh |
-| Hàng đợi / lịch | Không cần: `QUEUE_CONNECTION=sync`, app chưa có tác vụ định kỳ |
+| Hàng đợi / lịch | Hàng đợi không cần (`QUEUE_CONNECTION=sync`). Lịch: systemd timer `sosuckhoe-schedule.timer` chạy `schedule:run` mỗi phút (VPS không có `crontab`) — xem mục "Lịch chạy tự động" |
 
 > Luôn chạy git / composer / npm / artisan bằng `sudo -u rexllm`, **không chạy bằng root**. Nếu chạy bằng root, file sẽ thuộc root và PHP-FPM không ghi được.
 
@@ -50,14 +50,31 @@ Production chỉ seed danh mục: `DrugSeeder`, `TemplateSeeder`, `ContentSeeder
 
 Điều khoản đồng ý hiện là bản **nháp**. Ở production chỉ bản đã duyệt mới hiện ra và mới được ghi nhận, nên cần thêm một bản `consent_versions` có `is_draft = 0` sau khi pháp chế duyệt nội dung.
 
-## Lịch chạy tự động (cron)
+## Lịch chạy tự động
 
-Thực đơn và bài tập **mỗi ngày một khác**: lệnh `careplan:daily` chạy lúc 04:30 (giờ Việt Nam), khai báo trong `routes/console.php`. Laravel chỉ chạy lịch khi server có cron gọi `schedule:run` mỗi phút — thêm một lần cho user chạy web (VD `rexllm`, cùng nhóm `www-data`):
+Thực đơn và bài tập **mỗi ngày một khác**: lệnh `careplan:daily` chạy lúc 04:30 (giờ Việt Nam), khai báo trong `routes/console.php`. Laravel chỉ chạy lịch khi có tiến trình gọi `schedule:run` mỗi phút. VPS là Ubuntu bản rút gọn (không có `crontab`) nên dùng systemd timer, đã cài ngày 28/09/2026:
+
+```ini
+# /etc/systemd/system/sosuckhoe-schedule.service
+[Service]
+Type=oneshot
+User=rexllm
+Group=www-data
+WorkingDirectory=/var/www/sosuckhoe
+ExecStart=/usr/bin/php artisan schedule:run
+
+# /etc/systemd/system/sosuckhoe-schedule.timer
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=1s
+[Install]
+WantedBy=timers.target
+```
 
 ```bash
-crontab -u rexllm -e
-# thêm dòng:
-* * * * * cd /var/www/sosuckhoe && php artisan schedule:run >> /dev/null 2>&1
+systemctl daemon-reload && systemctl enable --now sosuckhoe-schedule.timer
+systemctl list-timers sosuckhoe-schedule.timer          # lần chạy kế tiếp
+journalctl -u sosuckhoe-schedule.service --since today  # nhật ký
 ```
 
 Kiểm tra:

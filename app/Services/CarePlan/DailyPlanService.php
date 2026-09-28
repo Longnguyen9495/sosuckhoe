@@ -77,16 +77,20 @@ final class DailyPlanService
             }
         }
 
-        return DailyPlan::updateOrCreate(
-            ['patient_id' => $patient->id, 'plan_date' => $day->toDateString()],
-            [
-                'care_plan_id' => $plan->id,
-                'menu' => $menu ?? CarePlanService::menuFor($plan->content, $day),
-                'exercise_ids' => $this->rotation($plan, $patient, $day),
-                'tip' => $tip,
-                'source' => $menu !== null ? 'ai' : 'weekly',
-            ],
-        );
+        // Tìm theo whereDate: SQLite lưu cột date dạng "YYYY-MM-DD 00:00:00" nên updateOrCreate so bằng
+        // "YYYY-MM-DD" không thấy dòng cũ và tạo trùng (vi phạm unique patient_id + plan_date) khi chạy lại.
+        $row = DailyPlan::where('patient_id', $patient->id)->whereDate('plan_date', $day->toDateString())->first()
+            ?? new DailyPlan(['patient_id' => $patient->id, 'plan_date' => $day->toDateString()]);
+        $row->fill([
+            'care_plan_id' => $plan->id,
+            // AI lỗi lần này nhưng đã có thực đơn AI từ lần chạy trước trong ngày thì giữ thực đơn đó.
+            'menu' => $menu ?? ($row->exists && $row->source === 'ai' ? $row->menu : CarePlanService::menuFor($plan->content, $day)),
+            'exercise_ids' => $this->rotation($plan, $patient, $day),
+            'tip' => $tip ?? ($row->exists && $row->source === 'ai' ? $row->tip : null),
+            'source' => $menu !== null || ($row->exists && $row->source === 'ai') ? 'ai' : 'weekly',
+        ])->save();
+
+        return $row;
     }
 
     /**
