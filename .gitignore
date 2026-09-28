@@ -42,3 +42,4 @@ Thumbs.db
 # Hồ sơ trình duyệt dùng khi chụp màn hình
 docs/.edge-cdp-profile/
 docs/.chrome-profile/
+/docs/og-image/og.html

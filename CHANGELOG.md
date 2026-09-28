@@ -3,6 +3,8 @@
 ## 2026-09-28 — Chống trùng dữ liệu, bài tập có video, giao diện điện thoại
 
 ### Thêm
+- Trang chủ làm lại (`views/landing.js`, `css/landing.css`): chuyển động thuần CSS (mở màn, hiện dần khi cuộn, tắt khi bật giảm chuyển động), phần "Tham quan Sổ" giới thiệu 5 màn chính bằng tab CSS, thẻ "Còn nữa" (chia sẻ hồ sơ, chữ to, mất mạng, giao diện tối).
+- Ảnh xem trước khi chia sẻ link (`public/og-image.png`, thẻ Open Graph / Twitter trong `app.blade.php`); cách tạo lại ảnh: `docs/og-image/og-image.mjs`.
 - Chống trùng (`App\Services\Dedup\DuplicateMatcher`, chuẩn hoá bỏ dấu, "typ" / "típ", 10,16 = 10.16, giữ nguyên dương / âm tính):
   - Ảnh tải lại y hệt (cột mới `documents.content_hash`, SHA-256 sau khi bỏ metadata): trả phiếu đã có, không lưu, không gọi AI.
   - Bản chụp lại cùng phiếu (cùng loại, ngày, tiêu đề, khoa, nội dung ≥ 80%): gắn `duplicate_of_id`, không nhập lại xét nghiệm / chẩn đoán.

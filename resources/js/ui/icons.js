@@ -7,7 +7,7 @@ import {
     Download, Droplet, Droplets, Dumbbell, Eye, FileText, FlaskConical, Folder, Footprints, HeartPulse, Hospital, House,
     Image, Info, KeyRound, Leaf, Lock, MessageCircle, Moon, NotebookPen, Package, PartyPopper, Pill, Pin, Play, Plus,
     Salad, Settings, ShieldCheck, ShoppingCart, Smartphone, Sparkles, Stethoscope, Sun, Sunrise, Syringe, TrendingUp,
-    TriangleAlert, UserRound, Utensils,
+    TriangleAlert, UserRound, Utensils, WifiOff, ScanLine, Type, ChartLine, FileDown, Bell,
 } from 'lucide';
 
 const SET = {
@@ -19,6 +19,7 @@ const SET = {
     party: PartyPopper, pill: Pill, pin: Pin, play: Play, plus: Plus, salad: Salad, settings: Settings, shield: ShieldCheck,
     cart: ShoppingCart, phone: Smartphone, sparkles: Sparkles, stethoscope: Stethoscope, sun: Sun, sunrise: Sunrise,
     syringe: Syringe, trend: TrendingUp, warn: TriangleAlert, user: UserRound, utensils: Utensils,
+    'wifi-off': WifiOff, scan: ScanLine, type: Type, chart: ChartLine, 'file-down': FileDown, bell: Bell,
 };
 
 const attrs = (o) => Object.entries(o).map(([k, v]) => `${k}="${String(v).replace(/"/g, '&quot;')}"`).join(' ');
