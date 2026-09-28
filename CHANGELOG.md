@@ -3,6 +3,7 @@
 ## 2026-09-28 — Chống trùng dữ liệu, bài tập có video, giao diện điện thoại
 
 ### Thêm
+- Lịch, Phác đồ, Hồ sơ cùng kiểu màn Hôm nay: thẻ tóm tắt 3 ô đầu màn (`sumTile`), tiêu đề khối có icon (`blockHead`, chuyển sang `views/common.js`). Phác đồ xếp lại: lịch dùng hôm nay (dòng thời gian, liều sắp tới nổi bật) và thuốc theo đơn lên trước, bài hướng dẫn gập lại; Lịch gập mốc đã xong, báo mốc quá ngày; Hồ sơ hiện dị ứng nổi bật, xét nghiệm từng dòng không cần cuộn ngang.
 - Trang chủ làm lại (`views/landing.js`, `css/landing.css`): chuyển động thuần CSS (mở màn, hiện dần khi cuộn, tắt khi bật giảm chuyển động), phần "Tham quan Sổ" giới thiệu 5 màn chính bằng tab CSS, thẻ "Còn nữa" (chia sẻ hồ sơ, chữ to, mất mạng, giao diện tối).
 - Ảnh xem trước khi chia sẻ link (`public/og-image-v2.jpg`, thẻ Open Graph / Twitter trong `app.blade.php`); cách tạo lại ảnh: `docs/og-image/og-image.mjs`.
 - Chống trùng (`App\Services\Dedup\DuplicateMatcher`, chuẩn hoá bỏ dấu, "typ" / "típ", 10,16 = 10.16, giữ nguyên dương / âm tính):

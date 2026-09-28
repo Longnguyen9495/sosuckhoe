@@ -1,63 +1,118 @@
-/** Màn "Phác đồ": khung giờ một ngày, bệnh nền, thuốc + tồn kho, hướng dẫn. */
+/** Màn "Phác đồ": tóm tắt thuốc, lịch dùng trong ngày, thuốc + tồn kho, chế độ ăn, bài tập, bệnh nền, hướng dẫn. */
 import { api } from '../core/api.js';
-import { todayVN, dm, parseNum } from '../core/format.js';
+import { todayVN, dm, parseNum, nowTimeVN } from '../core/format.js';
 import { esc, delegate, skeleton, errorBox, draftTitle } from '../ui/dom.js';
 import { icon } from '../ui/icons.js';
 import { openSheet, closeSheet, toast, confirmDialog } from '../ui/shell.js';
-import { TYPE_TAG, linesToList, exerciseCard, playVideo, weeklyMenu, menuRows, WEEKDAYS, WEEKDAY_SHORT } from './common.js';
+import { TYPE_TAG, linesToList, exerciseCard, playVideo, weeklyMenu, menuRows, WEEKDAYS, WEEKDAY_SHORT, blockHead, sumTile } from './common.js';
 import { generateCarePlan } from './upload.js';
 
 const ICON = { insulin: icon('syringe'), topical: icon('droplets'), supply: icon('package'), medication: icon('pill') };
+/** Icon từng loại việc trong lịch dùng một ngày. */
+const ITEM_IC = { measurement: 'droplet', insulin: 'syringe', medication: 'pill', topical: 'droplets', meal: 'utensils', activity: 'footprints' };
+const GUIDE_IC = { guide_hypoglycemia: 'warn', guide_insulin: 'syringe', guide_diet: 'salad' };
 
 export async function renderPlan(ctx) {
     const pid = ctx.patient.id;
-    const date = ctx.store.get('date') || todayVN();
+    const today = todayVN();
+    const date = ctx.store.get('date') || today;
     const screen = ctx.render({
         title: 'Phác đồ điều trị',
         sub: 'Theo đúng đơn bác sĩ — ứng dụng không đổi liều',
         tab: 'plan',
-        body: `<div class="card lift"><div class="row" style="align-items:flex-start"><div class="pill-ico" style="background:var(--accent);color:var(--accent-ink)">!</div>
-                <div class="grow small ink2"><b style="color:var(--ink)">Nguyên tắc:</b> ứng dụng chỉ sắp xếp giờ dùng theo đơn, <b>không thay đổi liều</b>. Mọi điều chỉnh (đặc biệt liều insulin, ngừng thuốc) phải hỏi bác sĩ điều trị.</div></div>
-                <div class="row wrap-row" style="margin-top:12px"><button class="btn sm" data-act="nav" data-to="/rx/new">+ Nhập đơn mới</button><button class="btn sm ghost" data-act="nav" data-to="/upload">${icon('camera', { size: 16 })} Tải ảnh đơn (AI đọc)</button></div></div>
+        body: `<div class="card lift today-sum" id="plan-sum">
+                <div class="sum-grid" id="plan-tiles"></div>
+                <p class="rule-note">${icon('shield', { size: 16 })}<span>Ứng dụng chỉ sắp giờ dùng theo đơn, <b>không thay đổi liều</b>. Mọi điều chỉnh (nhất là liều insulin, ngừng thuốc) phải hỏi bác sĩ điều trị.</span></p>
+                <div class="plan-acts"><button class="btn sm" data-act="nav" data-to="/rx/new">${icon('plus', { size: 16 })} Nhập đơn mới</button><button class="btn sm ghost" data-act="nav" data-to="/upload">${icon('camera', { size: 16 })} Tải ảnh đơn (AI đọc)</button></div>
+            </div>
             <div id="pending"></div>
-            <div class="sec-title"><h2>Chế độ ăn uống &amp; sinh hoạt</h2><button class="btn sm ghost" data-act="careplan" id="cp-btn">Lập lại</button></div>
-            <div id="careplan">${skeleton(3)}</div>
-            <div class="sec-title"><h2>Bài tập gợi ý</h2><span>có video hướng dẫn</span></div>
-            <div id="exercises">${skeleton(2)}</div>
-            <div class="sec-title"><h2>Khung giờ một ngày</h2><span id="frame-date"></span></div>
-            <div class="card" id="frame">${skeleton(4)}</div>
-            <div class="sec-title"><h2>Thuốc theo đơn</h2><span id="rx-count"></span></div>
-            <div id="rx">${skeleton(4)}</div>
-            <div class="sec-title"><h2>Bệnh nền</h2><span id="cond-count"></span></div>
-            <div id="conditions">${skeleton(3)}</div>
-            <div class="sec-title"><h2>Hướng dẫn</h2><span>nội dung chờ bác sĩ duyệt</span></div>
-            <div id="articles">${skeleton(3)}</div>`,
+
+            <section class="blk">
+                ${blockHead('clock', date === today ? 'Lịch dùng hôm nay' : `Lịch dùng ngày ${dm(date)}`, '<span class="blk-sub" id="frame-count"></span>')}
+                <div class="card" id="frame">${skeleton(4)}</div>
+            </section>
+
+            <section class="blk">
+                ${blockHead('pill', 'Thuốc theo đơn', '<span class="blk-sub" id="rx-count"></span>')}
+                <div id="rx">${skeleton(4)}</div>
+            </section>
+
+            <section class="blk">
+                ${blockHead('salad', 'Chế độ ăn uống &amp; sinh hoạt', '<button class="btn sm ghost" data-act="careplan" id="cp-btn">Lập lại</button>')}
+                <div id="careplan">${skeleton(3)}</div>
+            </section>
+
+            <section class="blk">
+                ${blockHead('dumbbell', 'Bài tập gợi ý', '<span class="blk-sub">có video hướng dẫn</span>')}
+                <div id="exercises">${skeleton(2)}</div>
+            </section>
+
+            <section class="blk">
+                ${blockHead('stethoscope', 'Bệnh nền', '<span class="blk-sub" id="cond-count"></span>')}
+                <div id="conditions">${skeleton(3)}</div>
+            </section>
+
+            <section class="blk">
+                ${blockHead('info', 'Hướng dẫn', '<span class="blk-sub">chờ bác sĩ duyệt</span>')}
+                <div id="articles">${skeleton(3)}</div>
+            </section>`,
     });
 
     let prescriptions = [];
     let carePlan = null;
 
+    /* ----- Tóm tắt: số thuốc · liều tới · sắp hết (mỗi ô điền khi dữ liệu về) ----- */
+    const sum = { meds: undefined, next: undefined, low: undefined };
+    function drawSummary() {
+        const note = (text) => `<span class="small muted sum-line">${text}</span>`;
+        const wait = ['—', note('…')];
+        const meds = sum.meds === undefined ? wait : [String(sum.meds.count), note(`thuốc, vật tư · ${sum.meds.rx} đơn`)];
+        const next = sum.next === undefined ? wait : sum.next ? [esc(sum.next.time), note(esc(sum.next.title))] : ['—', note(date === today ? 'đã dùng đủ hôm nay' : 'xem màn Hôm nay')];
+        const low = sum.low === undefined ? wait : [String(sum.low.length), sum.low.length ? `<span class="chip warn">${esc(sum.low[0])}${sum.low.length > 1 ? ` +${sum.low.length - 1}` : ''}</span>` : note('đủ thuốc ≥ 7 ngày')];
+        screen.querySelector('#plan-tiles').innerHTML = `
+            ${sumTile('pill', 'Đang dùng', ...meds)}
+            ${sumTile('alarm', 'Liều tới', ...next)}
+            ${sumTile('package', 'Sắp hết', ...low)}`;
+    }
+    drawSummary();
+
+    /** Lịch dùng một ngày dạng dòng thời gian: mỗi mốc giờ một dòng, việc đã xong có dấu tích, mốc sắp tới nổi bật. */
     async function drawFrame() {
         const box = screen.querySelector('#frame');
         try {
             const { data } = await api(`/patients/${pid}/day/${date}`);
-            screen.querySelector('#frame-date').textContent = `ngày ${dm(date)}`;
             const groups = {};
-            data.items.filter((i) => i.type !== 'meal').forEach((i) => {
-                (groups[i.time] ||= []).push(i.type === 'measurement' ? `Đo ${i.title.replace(/^Đường huyết /, 'đường huyết ').toLowerCase()}` : `${i.title}${i.amount_text ? ` (${i.amount_text})` : ''}`);
-            });
-            data.items.filter((i) => i.type === 'meal').forEach((i) => { (groups[i.time] ||= []).push(`<b>${esc(i.title)}</b>`); });
+            data.items.forEach((i) => { (groups[i.time] ||= []).push(i); });
             const times = Object.keys(groups).sort();
+            const now = nowTimeVN();
+            const doses = data.items.filter((i) => ['medication', 'insulin', 'topical'].includes(i.type));
+            sum.next = date === today ? (doses.find((i) => !i.done && i.time >= now) || doses.find((i) => !i.done) || null) : null;
+            drawSummary();
+            const countable = data.items.filter((i) => i.countable);
+            screen.querySelector('#frame-count').textContent = countable.length ? `xong ${countable.filter((i) => i.done).length}/${countable.length}` : '';
+            const nextTime = date === today ? times.find((t) => t >= now && groups[t].some((i) => !i.done && i.type !== 'meal')) : null;
+            const text = (i) => (i.type === 'measurement'
+                ? esc(`Đo ${i.title.replace(/^Đường huyết /, 'đường huyết ').toLowerCase()}`)
+                : `${esc(i.title)}${i.amount_text ? ` <span class="muted">· ${esc(i.amount_text)}</span>` : ''}`);
             box.innerHTML = times.length
-                ? `<div class="day-sched">${times.map((t) => `<div class="h">${t}</div><div>${groups[t].map((x) => (x.startsWith('<b>') ? x : esc(x))).join(' · ')}</div>`).join('')}</div>`
+                ? `<div class="tl">${times.map((t) => {
+                    const list = groups[t];
+                    const allDone = list.filter((i) => i.countable).every((i) => i.done) && list.some((i) => i.countable);
+                    return `<div class="tl-row ${t === nextTime ? 'next' : ''} ${allDone ? 'done' : ''}"><span class="tl-time">${t}${t === nextTime ? '<small>sắp tới</small>' : ''}</span>
+                        <div class="tl-items">${list.map((i) => `<div class="tl-it t-${esc(i.type)} ${i.done ? 'ok' : ''}">${icon(ITEM_IC[i.type] || 'pin', { size: 15 })}<span>${text(i)}</span>${i.done ? icon('check', { size: 15 }) : ''}</div>`).join('')}</div></div>`;
+                }).join('')}</div>`
                 : '<div class="empty">Ngày này chưa có lịch. Nhập đơn thuốc để có lịch.</div>';
         } catch (error) {
+            sum.next = null;
+            drawSummary();
             box.innerHTML = errorBox(error.message);
         }
     }
 
     function medCard(item) {
-        const times = item.times.length ? item.times.map((t) => `${t.time} · ${esc(t.amount_text)}`).join(' &nbsp;|&nbsp; ') : (item.type === 'supply' ? 'Vật tư — không nhắc giờ' : '<span style="color:var(--warn)">Chưa có giờ dùng</span>');
+        const times = item.times.length
+            ? `<div class="dose-times">${item.times.map((t) => `<span class="dose">${icon('clock', { size: 13 })}<b>${t.time}</b>${esc(t.amount_text)}</span>`).join('')}</div>`
+            : `<div class="small ${item.type === 'supply' ? 'muted' : ''}" style="margin-top:4px${item.type === 'supply' ? '' : ';color:var(--warn)'}">${item.type === 'supply' ? 'Vật tư — không nhắc giờ' : 'Chưa có giờ dùng'}</div>`;
         let stock = '';
         if (item.supply_days) {
             const pct = Math.max(0, Math.min(100, Math.round((item.days_left * 100) / item.supply_days)));
@@ -70,14 +125,15 @@ export async function renderPlan(ctx) {
         const qty = item.prescribed_quantity !== null
             ? `SL kê ${item.prescribed_quantity}${item.purchased_quantity !== null && item.purchased_quantity !== item.prescribed_quantity ? ` · đã mua <b>${item.purchased_quantity}</b>` : ''} ${esc(item.quantity_unit || '')}`
             : '';
-        return `<div class="med"><div class="pill-ico">${ICON[item.type] || ICON.medication}</div><div class="grow">
-            <b>${esc(item.drug_name)}</b> ${item.active_ingredient ? `<span class="small muted">${esc(item.active_ingredient)}</span>` : ''}
-            <div class="how">${TYPE_TAG[item.type] || ''}${times}</div>
-            <div class="small ink2">${esc(item.dose_text)}</div>
+        return `<div class="med t-${esc(item.type)}"><div class="pill-ico">${ICON[item.type] || ICON.medication}</div><div class="grow">
+            <div class="med-h"><b>${esc(item.drug_name)}</b>${TYPE_TAG[item.type] || ''}</div>
+            ${item.active_ingredient ? `<div class="small muted">${esc(item.active_ingredient)}</div>` : ''}
+            ${times}
+            ${item.dose_text ? `<div class="small ink2" style="margin-top:4px">${esc(item.dose_text)}</div>` : ''}
             ${item.purpose ? `<div class="small ink2">${esc(item.purpose)}${qty ? ` · ${qty}` : ''}</div>` : (qty ? `<div class="small ink2">${qty}</div>` : '')}
             ${item.warning ? `<div class="warn-line">${icon('warn', { size: 14 })} ${esc(item.warning)}</div>` : ''}
             ${stock}
-            ${item.supply_days ? `<button class="link-btn small" data-act="bought" data-id="${esc(item.id)}">+ Đã mua thêm</button>` : ''}
+            ${item.supply_days ? `<button class="link-btn small" data-act="bought" data-id="${esc(item.id)}">${icon('plus', { size: 14 })} Đã mua thêm</button>` : ''}
         </div></div>`;
     }
 
@@ -85,15 +141,21 @@ export async function renderPlan(ctx) {
         const box = screen.querySelector('#rx');
         try {
             prescriptions = (await api(`/patients/${pid}/prescriptions?date=${todayVN()}`)).data;
-            const count = prescriptions.reduce((n, p) => n + p.items.length, 0);
-            screen.querySelector('#rx-count').textContent = `${prescriptions.length} đơn · ${count} thuốc / vật tư`;
-            box.innerHTML = prescriptions.length ? prescriptions.map((p) => `<div class="card">
-                <div class="row" style="align-items:flex-start"><div class="grow"><h3>${esc(p.doctor_name || 'Đơn thuốc')}</h3>
-                    <div class="small muted">Kê ${p.prescribed_at ? dm(p.prescribed_at) : '—'} · dùng từ ${p.starts_at ? dm(p.starts_at) : '—'}${p.ends_at ? ` đến ${dm(p.ends_at)}` : ''}</div></div>
-                    <button class="btn sm ghost" data-act="close-rx" data-id="${esc(p.id)}">Kết thúc đơn</button></div>
+            const items = prescriptions.flatMap((p) => p.items);
+            screen.querySelector('#rx-count').textContent = prescriptions.length ? `${prescriptions.length} đơn · ${items.length} món` : '';
+            sum.meds = { count: items.length, rx: prescriptions.length };
+            sum.low = items.filter((i) => i.supply_days && i.days_left <= 7).map((i) => i.drug_name);
+            drawSummary();
+            box.innerHTML = prescriptions.length ? prescriptions.map((p) => `<div class="card rx-card">
+                <div class="rx-h"><span class="rx-ic">${icon('stethoscope', { size: 18 })}</span><div class="grow"><h3>${esc(p.doctor_name || 'Đơn thuốc')}</h3>
+                    <div class="small muted">Kê ${p.prescribed_at ? dm(p.prescribed_at) : '—'} · dùng từ ${p.starts_at ? dm(p.starts_at) : '—'}${p.ends_at ? ` đến ${dm(p.ends_at)}` : ''} · ${p.items.length} món</div></div></div>
                 ${p.items.map(medCard).join('')}
-            </div>`).join('') : '<div class="empty">Chưa có đơn thuốc. Chạm "Nhập đơn mới" để thêm.</div>';
+                <div class="rx-foot"><button class="link-btn small" style="color:var(--bad)" data-act="close-rx" data-id="${esc(p.id)}">Kết thúc đơn này</button></div>
+            </div>`).join('') : '<div class="empty">Chưa có đơn thuốc. Chạm “Nhập đơn mới” ở trên để thêm.</div>';
         } catch (error) {
+            sum.meds = { count: 0, rx: 0 };
+            sum.low = [];
+            drawSummary();
             box.innerHTML = errorBox(error.message);
         }
     }
@@ -102,16 +164,15 @@ export async function renderPlan(ctx) {
         const box = screen.querySelector('#conditions');
         try {
             const { data } = await api(`/patients/${pid}/overview`);
-            screen.querySelector('#cond-count').textContent = `${data.conditions.length} vấn đề`;
-            box.innerHTML = data.conditions.length ? data.conditions.map((c) => `<div class="card cond ${c.priority === 'high' ? 'high' : ''}">
-                <div class="row" style="align-items:flex-start"><h3 class="grow">${esc(c.title)}</h3><span class="chip ${c.priority === 'high' ? 'bad' : 'info'}">${c.priority === 'high' ? 'Ưu tiên cao' : 'Theo dõi'}</span></div>
-                ${c.detail ? `<p class="small ink2" style="margin:6px 0 0">${esc(c.detail)}</p>` : ''}</div>`).join('')
+            screen.querySelector('#cond-count').textContent = data.conditions.length ? `${data.conditions.length} vấn đề` : '';
+            box.innerHTML = data.conditions.length ? `<div class="card issues">${data.conditions.map((c) => issueRow(c.title, c.detail, c.priority === 'high', c.priority === 'high' ? 'Ưu tiên cao' : 'Theo dõi')).join('')}</div>`
                 : '<div class="empty">Chưa ghi nhận bệnh nền.</div>';
         } catch (error) {
             box.innerHTML = errorBox(error.message);
         }
     }
 
+    /** Bài hướng dẫn dài: gập lại, bấm mới mở. Bài hạ đường huyết mở sẵn (cần biết khi khẩn cấp). */
     async function drawArticles() {
         const box = screen.querySelector('#articles');
         try {
@@ -120,7 +181,7 @@ export async function renderPlan(ctx) {
             const list = wanted.map((t) => data.find((a) => a.type === t)).filter(Boolean);
             box.innerHTML = list.length ? list.map((a) => {
                 const t = draftTitle(a.title);
-                return `<div class="card article"><h3>${t.html}</h3>${linesToList(a.content, a.type !== 'guide_diet')}</div>`;
+                return `<details class="card article fold" ${a.type === 'guide_hypoglycemia' ? 'open' : ''}><summary><span class="fold-ic">${icon(GUIDE_IC[a.type] || 'info', { size: 16 })}</span><span class="grow">${t.html}</span></summary><div class="fold-body">${linesToList(a.content, a.type !== 'guide_diet')}</div></details>`;
             }).join('') : '<div class="empty">Chưa có bài hướng dẫn.</div>';
         } catch (error) {
             box.innerHTML = errorBox(error.message);
@@ -137,8 +198,11 @@ export async function renderPlan(ctx) {
     }
 
     const list = (items) => (items || []).length ? `<ul>${items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+    /** Một dòng vấn đề sức khoẻ (bệnh nền, điều AI lưu ý): chấm màu theo mức ưu tiên. */
+    const issueRow = (title, detail, high, label, basedOn = '') => `<div class="issue ${high ? 'high' : ''}"><div class="issue-h"><b>${esc(title)}</b><span class="chip ${high ? 'bad' : 'info'}">${label}</span></div>
+        ${detail ? `<p class="small ink2">${esc(detail)}</p>` : ''}${basedOn ? `<p class="small muted">Căn cứ: ${esc(basedOn)}</p>` : ''}</div>`;
     /** Mục thu gọn: kế hoạch AI khá dài, chỉ mở phần người dùng cần. */
-    const fold = (ic, title, inner, show) => (show ? `<details class="card article fold"><summary>${icon(ic, { size: 18 })}<span class="grow">${esc(title)}</span></summary><div class="fold-body">${inner}</div></details>` : '');
+    const fold = (ic, title, inner, show) => (show ? `<details class="card article fold"><summary><span class="fold-ic">${icon(ic, { size: 16 })}</span><span class="grow">${esc(title)}</span></summary><div class="fold-body">${inner}</div></details>` : '');
 
     async function drawCarePlan() {
         const box = screen.querySelector('#careplan');
@@ -150,19 +214,20 @@ export async function renderPlan(ctx) {
             if (!data) {
                 box.innerHTML = `<div class="card cp-empty"><div class="cp-ico">${icon('salad', { size: 30 })}</div><b>Chưa có chế độ ăn uống</b>
                     <p class="small ink2">AI sẽ lập chế độ ăn, sinh hoạt và việc cần theo dõi dựa trên thuốc đang dùng và kết quả xét nghiệm trong hồ sơ.</p>
-                    <button class="btn" data-act="careplan">Lập kế hoạch (khoảng 1 phút)</button></div>`;
+                    <button class="btn" data-act="careplan">${icon('sparkles', { size: 18 })} Lập kế hoạch (khoảng 1 phút)</button></div>`;
                 return;
             }
             const c = data.content || {};
             const diet = c.diet || {};
             const week = weeklyMenu(c);
+            const issues = c.key_issues || [];
             box.innerHTML = `
-                ${c.summary ? `<div class="card cp-summary"><p style="margin:0">${esc(c.summary)}</p>
-                    <div class="small muted" style="margin-top:8px">Lập ${esc((data.created_at || '').slice(0, 10).split('-').reverse().join('/'))} · dựa trên ${data.sources?.medications ?? 0} thuốc, ${data.sources?.lab_results ?? 0} chỉ số xét nghiệm</div></div>` : ''}
-                ${(c.key_issues || []).map((i) => `<div class="card cond ${i.priority === 'high' ? 'high' : ''}"><div class="row" style="align-items:flex-start"><h3 class="grow">${esc(i.title)}</h3><span class="chip ${i.priority === 'high' ? 'bad' : 'info'}">${i.priority === 'high' ? 'Ưu tiên' : 'Theo dõi'}</span></div>
-                    ${i.detail ? `<p class="small ink2" style="margin:6px 0 0">${esc(i.detail)}</p>` : ''}${i.based_on ? `<p class="small muted" style="margin:4px 0 0">Căn cứ: ${esc(i.based_on)}</p>` : ''}</div>`).join('')}
-                <div class="card" id="menu-card"></div>
-                ${c.warning_signs?.length ? `<div class="alert bad"><div class="ico">!</div><div><b>Đi khám ngay nếu có</b>${list(c.warning_signs)}</div></div>` : ''}
+                ${c.summary || issues.length ? `<div class="card cp-summary">
+                    ${c.summary ? `<p class="cp-lead">${icon('sparkles', { size: 16 })}<span>${esc(c.summary)}</span></p>` : ''}
+                    ${issues.length ? `<div class="issues">${issues.map((i) => issueRow(i.title, i.detail, i.priority === 'high', i.priority === 'high' ? 'Ưu tiên' : 'Theo dõi', i.based_on)).join('')}</div>` : ''}
+                    <div class="small muted" style="margin-top:10px">Lập ${esc((data.created_at || '').slice(0, 10).split('-').reverse().join('/'))} · dựa trên ${data.sources?.medications ?? 0} thuốc, ${data.sources?.lab_results ?? 0} chỉ số xét nghiệm</div></div>` : ''}
+                <div class="card menu-card" id="menu-card"></div>
+                ${c.warning_signs?.length ? `<div class="alert bad"><div class="ico">${icon('warn', { size: 18 })}</div><div><b>Đi khám ngay nếu có</b>${list(c.warning_signs)}</div></div>` : ''}
                 ${fold('salad', 'Nên ăn · hạn chế · tránh', `
                     <div class="cp-cols">
                         ${diet.eat_more?.length ? `<div class="cp-col good"><h4>✓ Nên ăn</h4>${list(diet.eat_more)}</div>` : ''}
@@ -189,13 +254,13 @@ export async function renderPlan(ctx) {
         const week = weeklyMenu(c);
         if (!week) {
             const rows = menuRows(c.diet?.sample_day);
-            box.innerHTML = rows ? `<h3>Thực đơn gợi ý một ngày</h3>${rows}<p class="small muted" style="margin:8px 0 0">Bấm “Lập lại” để AI lên thực đơn 7 ngày khác nhau.</p>` : '';
+            box.innerHTML = rows ? `<h3>Thực đơn gợi ý một ngày</h3><div class="meals-list">${rows}</div><p class="small muted" style="margin:8px 0 0">Bấm “Lập lại” để AI lên thực đơn 7 ngày khác nhau.</p>` : '';
             box.hidden = !rows;
             return;
         }
         box.innerHTML = `<h3>Thực đơn 7 ngày</h3>
             <div class="seg menu-days" role="tablist">${WEEKDAYS.map((_, i) => `<button type="button" role="tab" data-act="menu-day" data-i="${i}" class="${i === dayIndex ? 'on' : ''}" aria-selected="${i === dayIndex}">${WEEKDAY_SHORT[i]}</button>`).join('')}</div>
-            <p class="small muted" style="margin:10px 0 4px">${WEEKDAYS[dayIndex]}${dayIndex === (new Date().getDay() + 6) % 7 ? ' · hôm nay' : ''}</p>${menuRows(week[dayIndex])}`;
+            <p class="small muted" style="margin:10px 0 6px">${WEEKDAYS[dayIndex]}${dayIndex === (new Date().getDay() + 6) % 7 ? ' · hôm nay' : ''}</p><div class="meals-list">${menuRows(week[dayIndex])}</div>`;
     }
 
     /** Bài tập chọn từ thư viện có video; video chỉ tải khi người bệnh bấm xem. */
@@ -207,7 +272,7 @@ export async function renderPlan(ctx) {
             return;
         }
         box.innerHTML = `<div class="ex-list">${items.map((e) => exerciseCard(e)).join('')}</div>
-            <div class="alert mua" style="margin-top:12px"><div class="ico">!</div><div><p style="margin:0">${esc(data.exercise_safety)}</p></div></div>`;
+            ${data.exercise_safety ? `<p class="small muted ex-safety">${icon('warn', { size: 14 })} ${esc(data.exercise_safety)}</p>` : ''}`;
     }
 
     delegate(screen, {
@@ -245,9 +310,9 @@ export async function renderPlan(ctx) {
     });
 
     drawPending();
-    drawCarePlan();
     drawFrame();
     drawRx();
+    drawCarePlan();
     drawConditions();
     drawArticles();
 }

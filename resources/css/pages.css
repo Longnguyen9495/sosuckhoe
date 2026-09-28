@@ -250,3 +250,116 @@
 .lab-val b { font-size: .98rem; }
 .lab-val .muted { font-size: .8rem; }
 .lab-val .chip { margin-left: 6px; padding: 1px 8px; font-size: .72rem; }
+
+/* ============ Lịch · Phác đồ · Hồ sơ: cùng kiểu màn Hôm nay (thẻ tóm tắt + khối có icon) ============ */
+.sum-line { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+.today-sum > .sum-grid + * { margin-top: 12px; }
+
+/* Lịch tháng */
+.cal-h { gap: 8px; }
+.cal-nav { width: var(--tap); height: var(--tap); border: 0; border-radius: 14px; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; flex: none; }
+.cal-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.cal-title .link-btn { min-height: 28px; padding: 2px 0; }
+.cell.future:not(.today) { background: var(--card); }
+.phase > div .chip { margin: 4px 0 2px; padding: 1px 8px; font-size: .7rem; }
+.chart-note { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: .78rem; color: var(--muted); }
+.band-dot { width: 12px; height: 12px; border-radius: 4px; background: var(--band); border: 1px solid var(--good); flex: none; }
+.ev-row .grow > b { display: block; font-size: .96rem; line-height: 1.35; }
+.ev-type { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: .74rem; font-weight: 700; color: var(--c, var(--brand)); margin-bottom: 2px; text-transform: uppercase; letter-spacing: .03em; }
+.ev-type .ic { width: 15px; height: 15px; }
+.ev-type .chip { text-transform: none; letter-spacing: 0; padding: 1px 8px; font-size: .7rem; }
+.ev-btn { margin-top: 8px; }
+.ev-row.past { opacity: .7; }
+#events .fold-lite { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; }
+
+/* Nút một dòng: icon + chữ + mũi tên (xuất CSV…) */
+.act-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: var(--r); padding: 12px 14px; color: var(--ink); min-height: 64px; box-shadow: var(--shadow); }
+@media (hover: hover) { .act-row:hover { border-color: var(--brand); } }
+.act-row > .ic:last-child { color: var(--muted); }
+.act-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); flex: none; }
+.act-row .grow { display: flex; flex-direction: column; }
+.act-row small { color: var(--muted); font-size: .8rem; }
+
+/* Phác đồ: nguyên tắc + nút thêm đơn trong thẻ tóm tắt */
+.rule-note { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0 0; background: var(--accent); color: var(--accent-ink); border-radius: 14px; padding: 9px 12px; font-size: .84rem; line-height: 1.45; }
+.rule-note .ic { flex: none; margin-top: 2px; }
+.plan-acts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin-top: 10px; }
+
+/* Lịch dùng một ngày: dòng thời gian */
+.tl { display: grid; }
+.tl-row { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.tl-row:last-child { border-bottom: 0; }
+.tl-time { font-weight: 800; color: var(--brand); font-size: .92rem; padding-top: 4px; line-height: 1.2; }
+.tl-time small { display: block; font-size: .66rem; font-weight: 700; color: var(--accent-ink); background: var(--accent); border-radius: 6px; padding: 1px 5px; margin-top: 4px; width: max-content; }
+.tl-row.next { background: var(--brand-soft); margin: 0 -10px; padding: 8px 10px; border-radius: 14px; border-bottom-color: transparent; }
+.tl-row.done .tl-time { color: var(--good); }
+.tl-items { display: grid; gap: 4px; }
+.tl-it { display: flex; align-items: flex-start; gap: 8px; font-size: .9rem; line-height: 1.4; padding: 4px 0; }
+.tl-it > .ic:first-child { width: 26px; height: 26px; padding: 5px; border-radius: 8px; background: var(--brand-soft); color: var(--brand); margin-top: -2px; }
+.tl-it > span { flex: 1; min-width: 0; }
+.tl-it > .ic:last-child:not(:first-child) { color: var(--good); margin-top: 2px; }
+.tl-it.t-measurement > .ic:first-child { background: var(--info-soft); color: var(--info); }
+.tl-it.t-insulin > .ic:first-child { background: var(--bad-soft); color: var(--bad); }
+.tl-it.t-topical > .ic:first-child { background: var(--good-soft); color: var(--good); }
+.tl-it.t-meal > .ic:first-child { background: var(--warn-soft); color: var(--warn); }
+.tl-it.t-meal > span { font-weight: 700; }
+.tl-it.ok > span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--good); }
+
+/* Đơn thuốc */
+.rx-card { padding: 14px; }
+.rx-h { display: flex; gap: 10px; align-items: flex-start; }
+.rx-h h3 { margin: 0; font-size: 1rem; }
+.rx-ic { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); flex: none; }
+.rx-foot { display: flex; justify-content: flex-end; margin-top: 4px; }
+.med-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.med-h .tag { margin: 0; }
+.med.t-insulin .pill-ico { background: var(--bad-soft); color: var(--bad); }
+.med.t-topical .pill-ico { background: var(--good-soft); color: var(--good); }
+.med.t-supply .pill-ico { background: var(--card); color: var(--muted); border: 1px solid var(--line); }
+.dose-times { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.dose { display: inline-flex; align-items: center; gap: 5px; font-size: .8rem; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 3px 8px; color: var(--ink-2); }
+.dose b { color: var(--brand); }
+.dose .ic { color: var(--muted); }
+
+/* Vấn đề sức khoẻ (bệnh nền, điều AI lưu ý): danh sách gọn thay cho mỗi mục một thẻ */
+.issues { display: grid; gap: 8px; }
+.card.issues { padding: 12px; }
+.issue { border-left: 4px solid var(--info); background: var(--card-2); border-radius: 4px 14px 14px 4px; padding: 9px 12px; }
+.issue.high { border-left-color: var(--bad); }
+.issue-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.issue-h b { font-size: .94rem; line-height: 1.35; min-width: 0; }
+.issue-h .chip { flex: none; padding: 1px 8px; font-size: .7rem; }
+.issue p { margin: 4px 0 0; }
+.cp-summary .issues { margin-top: 12px; }
+.cp-lead { display: flex; gap: 8px; align-items: flex-start; margin: 0; line-height: 1.5; }
+.cp-lead .ic { flex: none; margin-top: 4px; color: var(--brand); }
+.menu-card h3 { margin: 0 0 10px; font-size: 1rem; }
+.fold summary { justify-content: flex-start; }
+.fold summary .grow { flex: 1; }
+.fold-ic { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); flex: none; }
+
+/* Hồ sơ */
+.rec-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.rec-who b { font-size: 1.02rem; }
+.rec-allergy { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0 0; background: var(--bad-soft); color: var(--bad); border-radius: 12px; padding: 8px 10px; font-size: .86rem; }
+.rec-allergy .ic { flex: none; margin-top: 2px; }
+.rec-allergy span { color: var(--ink); }
+.rec-allergy b { color: var(--bad); }
+.card.rec { padding: 12px; }
+.rec .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 2px; }
+.rec .meta .chip { padding: 0 8px; font-size: .7rem; }
+.rec-acts { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.lab-card { padding: 12px 14px; }
+.lab-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.lab-h h3 { margin: 0; font-size: 1rem; }
+.lab-card .lab-row.off .lab-val b { color: var(--bad); }
+.lab-card .lab-name .chip { display: inline-flex; margin-top: 4px; padding: 1px 8px; font-size: .7rem; }
+.lab-card .lab-val { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 2px 4px; }
+.note-card { border-left: 4px solid var(--brand); }
+.rec-privacy { display: flex; gap: 8px; align-items: flex-start; margin: 18px 4px 6px; }
+.rec-privacy .ic { flex: none; margin-top: 3px; }
+
+@media (max-width: 380px) {
+  .plan-acts { grid-template-columns: 1fr; }
+  .tl-row { grid-template-columns: 50px minmax(0, 1fr); }
+}

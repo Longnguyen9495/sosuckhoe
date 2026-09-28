@@ -4,11 +4,8 @@ import { todayVN, addDays, dm, longDate, parseDate, WD, vn, parseNum, nowTimeVN,
 import { esc, delegate, skeleton, errorBox } from '../ui/dom.js';
 import { openSheet, closeSheet, toast, confirmDialog } from '../ui/shell.js';
 import { icon } from '../ui/icons.js';
-import { EVENT_META, POINTS, GLUCOSE_POINTS, SYMPTOMS, levelChip, readingText, readingLevel, exerciseCard, playVideo, weeklyMenu, menuRows, menuIndex, nextMeal, WEEKDAYS } from './common.js';
+import { EVENT_META, POINTS, GLUCOSE_POINTS, SYMPTOMS, levelChip, readingText, readingLevel, exerciseCard, playVideo, weeklyMenu, menuRows, menuIndex, nextMeal, WEEKDAYS, blockHead, sumTile } from './common.js';
 import { generateCarePlan } from './upload.js';
-
-/** Tiêu đề một khối: icon trong ô tròn + tên + phần phụ bên phải. */
-const blockHead = (ic, title, right = '') => `<div class="blk-h"><span class="blk-ic">${icon(ic, { size: 18 })}</span><h2>${title}</h2>${right}</div>`;
 
 export async function renderToday(ctx, params = {}) {
     const today = todayVN();
@@ -94,7 +91,7 @@ export async function renderToday(ctx, params = {}) {
         const list = exercises();
         const done = list.filter((e) => doneSet().has(e.id)).length;
         const next = isToday ? nextMeal(day.routine || {}, nowTimeVN()) : null;
-        const tile = (ic, label, value, extra = '') => `<div class="sum-tile"><span class="sum-ic">${icon(ic, { size: 18 })}</span><small>${label}</small><b>${value}</b>${extra}</div>`;
+        const tile = sumTile;
         screen.querySelector('#overview-card').innerHTML = `<div class="sum-grid">
             ${tile('droplet', 'Đường huyết', glu ? vn(glu.values.value) : '—', glu ? levelChip(readingLevel(glu)) : '<span class="small muted">chưa đo</span>')}
             ${tile('dumbbell', 'Bài tập', list.length ? `${done}/${list.length}` : '—', list.length ? `<span class="sum-bar"><i style="width:${Math.round((done * 100) / list.length)}%"></i></span>` : '')}

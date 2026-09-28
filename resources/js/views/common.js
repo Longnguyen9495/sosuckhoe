@@ -11,6 +11,12 @@ export const EVENT_META = {
     other: { icon: icon('pin', { size: 18 }), cls: 'kham', color: 'var(--muted)', label: 'Khác' },
 };
 
+/** Tiêu đề một khối: icon trong ô tròn + tên + phần phụ bên phải (Hôm nay, Lịch, Phác đồ, Hồ sơ). */
+export const blockHead = (ic, title, right = '') => `<div class="blk-h"><span class="blk-ic">${icon(ic, { size: 18 })}</span><h2>${title}</h2>${right}</div>`;
+
+/** Ô trong thẻ tóm tắt đầu màn: icon + nhãn + số lớn + dòng phụ. */
+export const sumTile = (ic, label, value, extra = '') => `<div class="sum-tile"><span class="sum-ic">${icon(ic, { size: 18 })}</span><small>${label}</small><b>${value}</b>${extra}</div>`;
+
 export const TYPE_TAG = {
     medication: '<span class="tag tmed">THUỐC</span>',
     insulin: '<span class="tag ins">INSULIN</span>',
