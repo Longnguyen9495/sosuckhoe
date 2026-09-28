@@ -91,11 +91,20 @@ function ensureLayers() {
 
 export function openSheet(innerHtml, onMount) {
     const l = ensureLayers();
-    l.sheet.innerHTML = `<div class="grab"></div>${innerHtml}`;
+    l.sheet.innerHTML = `<div class="sheet-top"><div class="grab"></div><div class="sheet-bar"><span class="sheet-title"></span><button type="button" class="sheet-x" aria-label="Đóng">${icon('close', { size: 20 })}</button></div></div>${innerHtml}`;
+    // Tiêu đề đầu tiên lên thanh trên cùng (dính khi cuộn) cạnh nút đóng — bảng dài vẫn luôn thấy đang làm gì.
+    const title = l.sheet.querySelector('.sheet-top ~ * h3, .sheet-top ~ h3');
+    if (title) l.sheet.querySelector('.sheet-title').append(title);
+    l.sheet.querySelector('.sheet-x').addEventListener('click', () => closeSheet());
     l.sheetOverlay.hidden = false;
     document.body.classList.add('sheet-open');
     onMount?.(l.sheet);
-    l.sheet.querySelector('input, select, textarea, button')?.focus();
+    // Không tự đặt con trỏ vào ô nhập đầu tiên: iPhone sẽ cuộn bảng tới ô đó (che mất tiêu đề) và bật bàn phím.
+    // Chỉ focus phần tử có [autofocus]; còn lại focus bảng (cho trình đọc màn hình) và luôn mở từ đầu.
+    l.sheet.scrollTop = 0;
+    const target = l.sheet.querySelector('[autofocus]');
+    if (target) target.focus({ preventScroll: true });
+    else { l.sheet.tabIndex = -1; l.sheet.focus({ preventScroll: true }); }
     return l.sheet;
 }
 

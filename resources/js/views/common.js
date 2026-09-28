@@ -103,9 +103,16 @@ export function exerciseCard(e, { done = null, compact = false } = {}) {
         </div></article>`;
 }
 
-/** Thay ảnh bằng khung video YouTube (iframe không nằm được trong <button>). */
+/**
+ * Thay ảnh bằng khung video YouTube (iframe không nằm được trong <button>).
+ * YouTube bắt buộc trang nhúng gửi Referer, thiếu là báo "Lỗi 153". Máy chủ đặt Referrer-Policy: same-origin
+ * cho cả site, nên riêng iframe này gửi tên miền (không gửi đường dẫn trang) qua referrerpolicy.
+ */
 export function playVideo(el) {
-    el.outerHTML = `<div class="ex-video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(el.dataset.yt)}?autoplay=1&rel=0&playsinline=1" title="Video bài tập" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>`;
+    const id = encodeURIComponent(el.dataset.yt);
+    const origin = encodeURIComponent(location.origin);
+    el.outerHTML = `<div class="ex-video"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1&origin=${origin}" title="Video bài tập" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+        <a class="ex-yt-link" href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener">Không xem được? Mở trên YouTube</a>`;
 }
 
 /* ---------- Thực đơn ---------- */

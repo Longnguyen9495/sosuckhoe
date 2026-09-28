@@ -314,3 +314,12 @@
   .phase { grid-template-columns: 1fr; }
 }
 @media print { .nav, .fab, .icon-btn { display: none; } }
+
+/* Thanh trên cùng của bảng trượt: vạch kéo + tiêu đề + nút đóng, dính khi cuộn nội dung dài. */
+.sheet-top { position: sticky; top: -10px; z-index: 3; background: var(--card); margin: -10px -16px 12px; padding: 10px 16px 10px; border-bottom: 1px solid var(--line); }
+.sheet-top .grab { margin-bottom: 8px; }
+.sheet-bar { display: flex; align-items: center; gap: 10px; min-height: var(--tap); }
+.sheet-title { flex: 1; min-width: 0; }
+.sheet-title h3 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.12rem; line-height: 1.3; }
+.sheet-x { width: var(--tap); height: var(--tap); flex: none; border: 0; border-radius: 12px; background: var(--card-2); color: var(--ink-2); display: grid; place-items: center; }
+.ex-yt-link { display: block; text-align: center; font-size: .8rem; font-weight: 600; padding: 6px 0 0; }
