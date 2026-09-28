@@ -1,10 +1,11 @@
 /**
- * Tạo ảnh xem trước khi chia sẻ link (public/og-image.png, 1200×630) — Zalo, Facebook, Messenger.
+ * Tạo ảnh xem trước khi chia sẻ link (1200×630, public/og-image-v*.jpg) — Zalo, Facebook, Messenger.
  * 1) node docs/og-image/og-image.mjs   → ghi docs/og-image/og.html (không đưa lên git)
  * 2) Chụp bằng Edge / Chrome headless:
  *    msedge --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 \
- *      --virtual-time-budget=8000 --screenshot=public/og-image.png file:///.../docs/og-image/og.html
- * 3) Tăng ?v= của og:image trong resources/views/app.blade.php để Zalo / Facebook tải lại ảnh.
+ *      --virtual-time-budget=8000 --screenshot=og.png file:///.../docs/og-image/og.html
+ * 3) Đổi sang JPG (≈120 KB) và đặt TÊN MỚI: public/og-image-v3.jpg…, sửa $shareImage trong resources/views/app.blade.php
+ *    — Zalo lưu tạm theo đường dẫn ảnh.
  */
 import { createRequire } from 'module';
 import { writeFileSync } from 'fs';
