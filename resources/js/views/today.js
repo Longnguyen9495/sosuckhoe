@@ -178,7 +178,7 @@ export async function renderToday(ctx, params = {}) {
 
     /**
      * Không ăn đúng được thực đơn (ăn cỗ, ăn ngoài, nhà nấu món khác…): đủ 3 nhóm nên ăn / hạn chế / tránh
-     * và lưu ý thuốc với thức ăn, để tự chọn món thay thế.
+     * để tự chọn món thay thế. Lưu ý thuốc – thức ăn chỉ để ở màn Phác đồ (dài, không cần xem mỗi ngày).
      */
     function dietGuide(diet) {
         const groups = [
@@ -186,14 +186,11 @@ export async function renderToday(ctx, params = {}) {
             ['warn', 'Hạn chế', diet.limit, 'warn'],
             ['ban', 'Tránh', diet.avoid, 'bad'],
         ].filter(([, , list]) => list?.length);
-        const drug = diet.drug_food_notes || [];
-        if (!groups.length && !drug.length) return '';
+        if (!groups.length) return '';
         return `<div class="diet-guide">
             <p class="diet-guide-h">${icon('info', { size: 16 })}<span><b>Không ăn được như thực đơn?</b> Tự chọn món theo các nhóm dưới đây.</span></p>
             ${groups.map(([ic, label, list, tone]) => `<div class="diet-grp ${tone}"><div class="diet-grp-h">${icon(ic, { size: 15 })}<b>${label}</b></div>
                 <ul>${list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}
-            ${drug.length ? `<div class="diet-grp drug"><div class="diet-grp-h">${icon('pill', { size: 15 })}<b>Lưu ý với thuốc đang dùng</b></div>
-                <ul>${drug.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
         </div>`;
     }
 

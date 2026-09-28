@@ -176,7 +176,6 @@
 .diet-grp.good { --g: var(--good); --g-soft: var(--good-soft); }
 .diet-grp.warn { --g: var(--warn); --g-soft: var(--warn-soft); }
 .diet-grp.bad { --g: var(--bad); --g-soft: var(--bad-soft); }
-.diet-grp.drug { --g: var(--info); --g-soft: var(--info-soft); }
 .diet-grp-h { display: flex; align-items: center; gap: 6px; color: var(--g); font-size: .88rem; }
 .diet-grp-h .ic { width: 22px; height: 22px; padding: 4px; border-radius: 7px; background: var(--g); color: var(--card); }
 .diet-grp ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
@@ -184,7 +183,7 @@
 .diet-grp li::before { content: ""; position: absolute; left: 2px; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--g); }
 @media (min-width: 560px) {
   .diet-guide { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .diet-guide-h, .diet-grp.drug { grid-column: 1 / -1; }
+  .diet-guide-h { grid-column: 1 / -1; }
 }
 .menu-days { margin-top: 6px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .menu-days button { min-width: 0; padding: 8px 0; text-align: center; }
