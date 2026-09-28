@@ -107,12 +107,29 @@ export function exerciseCard(e, { done = null, compact = false } = {}) {
  * Thay ảnh bằng khung video YouTube (iframe không nằm được trong <button>).
  * YouTube bắt buộc trang nhúng gửi Referer, thiếu là báo "Lỗi 153". Máy chủ đặt Referrer-Policy: same-origin
  * cho cả site, nên riêng iframe này gửi tên miền (không gửi đường dẫn trang) qua referrerpolicy.
+ * Nút phóng to của YouTube nhỏ, chỉ hiện khi chạm vào video → thêm nút "Phóng to" riêng dưới khung.
+ * iPhone không cho phóng to khung iframe (chỉ thẻ <video>) → mở video trên YouTube.
  */
 export function playVideo(el) {
     const id = encodeURIComponent(el.dataset.yt);
     const origin = encodeURIComponent(location.origin);
-    el.outerHTML = `<div class="ex-video"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1&origin=${origin}" title="Video bài tập" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
-        <a class="ex-yt-link" href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener">Không xem được? Mở trên YouTube</a>`;
+    const watch = `https://www.youtube.com/watch?v=${id}`;
+    const tpl = document.createElement('template');
+    tpl.innerHTML = `<div class="ex-video"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1&fs=1&origin=${origin}" title="Video bài tập" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+        <div class="ex-video-bar">
+            <button type="button" class="btn sm ghost ex-fs">${icon('maximize', { size: 16 })} Phóng to</button>
+            <a class="ex-yt-link" href="${watch}" target="_blank" rel="noopener">Không xem được? Mở trên YouTube</a>
+        </div>`;
+    const box = tpl.content.querySelector('.ex-video');
+    tpl.content.querySelector('.ex-fs').addEventListener('click', (event) => {
+        event.stopPropagation();
+        const enter = box.requestFullscreen || box.webkitRequestFullscreen;
+        if (!enter) { window.open(watch, '_blank', 'noopener'); return; }
+        Promise.resolve(enter.call(box))
+            .then(() => screen.orientation?.lock?.('landscape').catch(() => {}))
+            .catch(() => window.open(watch, '_blank', 'noopener'));
+    });
+    el.replaceWith(tpl.content);
 }
 
 /* ---------- Thực đơn ---------- */
