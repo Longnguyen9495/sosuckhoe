@@ -152,7 +152,7 @@ export async function renderToday(ctx, params = {}) {
     /** Thời điểm đo được suy ra từ giờ người bệnh nhập — không phải chọn tay. */
     function drawGluPoint() {
         const time = screen.querySelector('#glu-time').value;
-        screen.querySelector('#glu-point').textContent = time ? `Tính là: ${POINTS[guessGlucosePoint(day.items, time)]}` : 'Nhập giờ đo.';
+        screen.querySelector('#glu-point').textContent = time ? `Tính là: ${POINTS[guessGlucosePoint(day.items, time)]} · lúc ${time}` : 'Nhập giờ đo.';
     }
 
     function drawSymptoms() {
@@ -323,7 +323,7 @@ export async function openQuickReading(ctx) {
         items = (await api(`/patients/${pid}/day/${date}`)).data.items;
     } catch (_e) { /* vẫn cho nhập */ }
     const isToday = date === today;
-    const pointText = (t) => (t ? `Tính là: ${POINTS[guessGlucosePoint(items, t)]}${isToday ? '' : ` · ngày ${date.split('-').reverse().join('/')}`}` : 'Nhập giờ đo.');
+    const pointText = (t) => (t ? `Tính là: ${POINTS[guessGlucosePoint(items, t)]} · lúc ${t}${isToday ? '' : ` · ngày ${date.split('-').reverse().join('/')}`}` : 'Nhập giờ đo.');
     const startTime = isToday ? nowTimeVN() : '07:00';
 
     const sheet = openSheet(`<h3>Ghi đường huyết</h3>
