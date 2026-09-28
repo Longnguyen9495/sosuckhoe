@@ -109,6 +109,11 @@ class DocumentIngestTest extends TestCase
                 return [];
             }
 
+            public function generateGlucoseNote(array $context): array
+            {
+                return [];
+            }
+
             public function model(): string
             {
                 return 'test';

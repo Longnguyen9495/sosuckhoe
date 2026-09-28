@@ -60,6 +60,22 @@ final class FakeMedicalAiClient implements MedicalAiClient
         ];
     }
 
+    public function generateGlucoseNote(array $context): array
+    {
+        $n = $context['today']['count'] ?? 0;
+
+        return [
+            'summary' => "Hôm nay đã đo {$n} lần (nhận xét mẫu).",
+            'points' => [
+                ['tone' => 'good', 'text' => 'Đo đều đặn giúp bác sĩ đánh giá chính xác hơn.'],
+                ['tone' => 'warn', 'text' => 'Bữa trưa nên bớt tinh bột, ăn rau trước.'],
+                // Lời khuyên đổi liều phải bị bộ lọc an toàn loại bỏ.
+                ['tone' => 'info', 'text' => 'Có thể tăng liều insulin thêm 2 đơn vị.'],
+            ],
+            'ask_doctor' => 'Mục tiêu đường huyết sau ăn của tôi là bao nhiêu?',
+        ];
+    }
+
     public function generateCarePlan(array $context): array
     {
         return [

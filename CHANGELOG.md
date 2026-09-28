@@ -3,6 +3,7 @@
 ## 2026-09-28 — Chống trùng dữ liệu, bài tập có video, giao diện điện thoại
 
 ### Thêm
+- Nhận xét đường huyết từng ngày (màn Hôm nay, `GlucoseInsightService`, bảng `glucose_notes`, `GET/POST /patients/{id}/glucose-note/{ngày}`): code tính số liệu (so mục tiêu riêng, so trung bình 7 ngày cùng thời điểm, lúc đói vượt mục tiêu nhiều ngày liền, hạ đường huyết, HbA1c quy ra đường huyết trung bình, thuốc chưa đánh dấu); AI viết lời nhận xét từ các số đó (`MedicalAiClient::generateGlucoseNote`). Lưu theo ngày, chỉ viết lại khi có số đo mới; lọc câu khuyên đổi thuốc / liều; AI lỗi thì dùng nhận xét theo quy tắc. Không cần cron hay hàng đợi.
 - Màn Hôm nay, mục Thực đơn: khi không ăn được như thực đơn, hiện đủ nhóm Nên ăn / Hạn chế / Tránh và lưu ý thuốc với thức ăn (từ kế hoạch chăm sóc) để tự chọn món; trước chỉ có 2 dòng, mỗi dòng 2 món.
 - Lịch, Phác đồ, Hồ sơ cùng kiểu màn Hôm nay: thẻ tóm tắt 3 ô đầu màn (`sumTile`), tiêu đề khối có icon (`blockHead`, chuyển sang `views/common.js`). Phác đồ xếp lại: lịch dùng hôm nay (dòng thời gian, liều sắp tới nổi bật) và thuốc theo đơn lên trước, bài hướng dẫn gập lại; Lịch gập mốc đã xong, báo mốc quá ngày; Hồ sơ hiện dị ứng nổi bật, xét nghiệm từng dòng không cần cuộn ngang.
 - Trang chủ làm lại (`views/landing.js`, `css/landing.css`): chuyển động thuần CSS (mở màn, hiện dần khi cuộn, tắt khi bật giảm chuyển động), phần "Tham quan Sổ" giới thiệu 5 màn chính bằng tab CSS, thẻ "Còn nữa" (chia sẻ hồ sơ, chữ to, mất mạng, giao diện tối).

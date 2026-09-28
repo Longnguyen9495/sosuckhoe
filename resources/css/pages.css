@@ -81,6 +81,27 @@
 .glu-form .field { margin: 0; }
 .glu-form .field .glu-time { flex: 1; }
 #readings-card .tbl { margin-top: 10px; }
+/* Nhận xét đường huyết trong ngày (số liệu code tính + lời AI viết) */
+.gnote { margin-top: 12px; padding: 12px; border-radius: 16px; background: var(--brand-soft); display: grid; gap: 8px; }
+.gnote-h { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.gnote-h b { font-size: .96rem; }
+.gnote-h .chip { padding: 1px 8px; font-size: .7rem; background: var(--card); }
+.gnote-ic { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: var(--brand); color: var(--on-brand); flex: none; }
+.gnote-busy { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); }
+.gnote-stats { display: flex; flex-wrap: wrap; gap: 6px; }
+.gnote-stats .chip { font-size: .74rem; }
+.gnote-sum { margin: 0; font-size: .94rem; line-height: 1.5; font-weight: 600; }
+.gnote-pts { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.gnote-pts li { display: flex; gap: 8px; align-items: flex-start; font-size: .88rem; line-height: 1.45; background: var(--card); border-radius: 12px; padding: 8px 10px; }
+.gnote-pts li > .ic { flex: none; margin-top: 2px; color: var(--info); }
+.gnote-pts li.good > .ic { color: var(--good); }
+.gnote-pts li.warn > .ic { color: var(--warn); }
+.gnote-pts li.bad { background: var(--bad-soft); }
+.gnote-pts li.bad > .ic { color: var(--bad); }
+.gnote-ask { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: .86rem; color: var(--ink-2); }
+.gnote-ask .ic { flex: none; margin-top: 2px; color: var(--brand); }
+.gnote-ask b { color: var(--ink); }
+.gnote-disc { margin: 0; font-size: .72rem; color: var(--muted); }
 .qr-more { margin: 12px 0; }
 .qr-more summary { cursor: pointer; color: var(--brand); font-weight: 600; font-size: .92rem; }
 

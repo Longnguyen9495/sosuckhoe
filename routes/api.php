@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\DoctorThresholdConfirmController;
 use App\Http\Controllers\Api\V1\DocumentDownloadController;
 use App\Http\Controllers\Api\V1\DocumentUploadController;
 use App\Http\Controllers\Api\V1\DrugController;
+use App\Http\Controllers\Api\V1\GlucoseNoteController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\ShareLinkController;
 use App\Http\Controllers\Api\V1\SharedViewController;
@@ -123,6 +124,8 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/patients/{patient}/readings', [PatientDayController::class, 'readingsIndex'])->name('patients.readings.index');
         Route::post('/patients/{patient}/readings', [PatientDayController::class, 'storeReading'])->name('patients.readings.store');
+        Route::get('/patients/{patient}/glucose-note/{date}', [GlucoseNoteController::class, 'show'])->name('patients.glucose-note.show');
+        Route::post('/patients/{patient}/glucose-note/{date}', [GlucoseNoteController::class, 'store'])->middleware('throttle:20,1')->name('patients.glucose-note.store');
 
         Route::get('/patients/{patient}/events', [PatientDayController::class, 'eventsIndex'])->name('patients.events.index');
         Route::post('/patients/{patient}/events', [PatientDayController::class, 'storeEvent'])->name('patients.events.store');

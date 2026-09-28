@@ -28,6 +28,14 @@ interface MedicalAiClient
      */
     public function generateDailyMenu(array $context): array;
 
+    /**
+     * Nhận xét đường huyết MỘT ngày, viết từ số liệu đã tính sẵn (không tự tính lại), không bao giờ khuyên đổi liều.
+     *
+     * @param  array<string, mixed>  $context  xem GlucoseInsightService::aiContext()
+     * @return array{summary?: string, points?: list<array{tone?: string, text?: string}>, ask_doctor?: string|null}
+     */
+    public function generateGlucoseNote(array $context): array;
+
     /** Tên model để ghi nguồn. */
     public function model(): string;
 }

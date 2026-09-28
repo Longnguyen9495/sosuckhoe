@@ -89,6 +89,11 @@ class DailyPlanTest extends TestCase
                 throw new \RuntimeException('Dịch vụ AI trả lỗi (503).');
             }
 
+            public function generateGlucoseNote(array $context): array
+            {
+                return [];
+            }
+
             public function model(): string
             {
                 return 'test';

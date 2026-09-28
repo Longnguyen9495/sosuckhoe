@@ -34,6 +34,7 @@ export async function renderToday(ctx, params = {}) {
                     </form>
                     <div class="small muted glu-point" id="glu-point" aria-live="polite"></div>
                     <div id="readings-card"></div>
+                    <div id="glu-note" aria-live="polite"></div>
                 </div>
             </section>
 
@@ -210,9 +211,57 @@ export async function renderToday(ctx, params = {}) {
             <p class="small muted ex-safety">${icon('warn', { size: 14 })} ${esc(carePlan.exercise_safety || '')}</p>`;
     }
 
+    /* ----- Nhận xét đường huyết trong ngày: số liệu hiện ngay, AI viết lời sau (chậm) khi có số đo mới ----- */
+    let noteSeq = 0;
+    async function loadNote() {
+        const seq = ++noteSeq;
+        const box = screen.querySelector('#glu-note');
+        let data;
+        try {
+            data = (await api(`/patients/${pid}/glucose-note/${date}`)).data;
+        } catch (_e) { if (seq === noteSeq) box.innerHTML = ''; return; }
+        if (seq !== noteSeq) return;
+        drawNote(data, data.needs_ai);
+        if (!data.needs_ai) return;
+        try {
+            const res = await api(`/patients/${pid}/glucose-note/${date}`, { method: 'POST' });
+            // Lần tải mới hơn (vừa lưu thêm số đo) đã thay chỗ; mất mạng thì yêu cầu được xếp hàng → giữ nhận xét quy tắc.
+            if (seq === noteSeq) drawNote(res.queued ? data : res.data, false);
+        } catch (_e) {
+            if (seq === noteSeq) drawNote(data, false);
+        }
+    }
+
+    function drawNote(data, busy) {
+        const box = screen.querySelector('#glu-note');
+        const s = data.stats;
+        const chips = [
+            s.today.count ? `<span class="chip ${s.today.in_target === s.today.count ? 'good' : 'warn'}">${s.today.in_target}/${s.today.count} lần đạt</span>` : '',
+            s.last_7_days.fasting_avg !== null ? `<span class="chip info">Lúc đói TB 7 ngày: ${vn(s.last_7_days.fasting_avg)}</span>` : '',
+            s.hba1c ? `<span class="chip info">HbA1c ${vn(s.hba1c.value)}% ≈ ${vn(s.hba1c.estimated_avg_glucose)}</span>` : '',
+        ].join('');
+        if (!s.today.count) {
+            box.innerHTML = chips ? `<div class="gnote-stats" style="margin-top:10px">${chips}</div>` : '';
+            return;
+        }
+        const note = data.note || data.fallback;
+        const ai = data.note?.source === 'ai';
+        const TONE_IC = { good: 'check-circle', warn: 'warn', bad: 'warn', info: 'info' };
+        box.innerHTML = `<div class="gnote">
+            <div class="gnote-h"><span class="gnote-ic">${icon('sparkles', { size: 16 })}</span><b>Nhận xét hôm nay</b>
+                ${busy ? '<span class="gnote-busy"><span class="spin"></span>AI đang nhận xét…</span>' : ai ? '<span class="chip">AI · tham khảo</span>' : ''}</div>
+            ${chips ? `<div class="gnote-stats">${chips}</div>` : ''}
+            ${note.summary ? `<p class="gnote-sum">${esc(note.summary)}</p>` : ''}
+            ${note.points?.length ? `<ul class="gnote-pts">${note.points.map((p) => `<li class="${esc(p.tone)}">${icon(TONE_IC[p.tone] || 'info', { size: 15 })}<span>${esc(p.text)}</span></li>`).join('')}</ul>` : ''}
+            ${note.ask_doctor ? `<p class="gnote-ask">${icon('stethoscope', { size: 15 })}<span><b>Nên hỏi bác sĩ:</b> ${esc(note.ask_doctor)}</span></p>` : ''}
+            <p class="gnote-disc">${esc(data.disclaimer)}</p>
+        </div>`;
+    }
+
     function drawAll() {
         drawOverview(); drawStrip(); drawAlerts(); drawReadings(); drawMenu(); drawExercises(); drawSymptoms();
         screen.querySelector('#note').value = day.day_log.note || '';
+        loadNote();
     }
     drawAll();
 
