@@ -1,8 +1,53 @@
 /* Trang giới thiệu, đăng ký nhanh, tải ảnh khám bệnh, kế hoạch chăm sóc — cùng token với components.css. */
 
 /* ============ Đăng nhập / đăng ký nhanh ============ */
+.app.auth-app { max-width: none; padding-bottom: 0; }
+.auth { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+.auth-side {
+  background: linear-gradient(135deg, var(--brand-deep), var(--brand) 55%, var(--brand-2));
+  color: var(--on-brand); position: relative; overflow: hidden;
+  padding: calc(14px + env(safe-area-inset-top)) 20px 64px; border-radius: 0 0 28px 28px;
+}
+.auth-side::after { content: ""; position: absolute; right: -70px; top: -70px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255, 255, 255, .08); }
+.auth-side::before { content: ""; position: absolute; left: -50px; bottom: -80px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255, 255, 255, .06); }
+.auth-side > * { position: relative; z-index: 1; }
 .auth .brand-mark { color: #fff; text-decoration: none; }
-.auth .topbar .icon-btn { text-decoration: none; font-weight: 700; }
+.auth .topbar .icon-btn { text-decoration: none; }
+.auth-intro h1 { font-size: 1.5rem; line-height: 1.25; margin: 18px 0 4px; }
+.auth-intro .sub { margin: 0; opacity: .9; font-size: .92rem; }
+.auth-points { display: none; list-style: none; margin: 0; padding: 0; }
+.auth-points li { display: flex; align-items: center; gap: 12px; font-size: .95rem; }
+.auth-points li span { width: 36px; height: 36px; border-radius: 12px; background: rgba(255, 255, 255, .16); display: grid; place-items: center; flex: none; }
+.auth-main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0 16px 24px; }
+.auth-card { position: relative; z-index: 2; width: 100%; max-width: 440px; margin-top: -40px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-lg); padding: 20px; }
+.auth-card h3 { margin: 0 0 8px; font-size: 1.1rem; }
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 18px; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; }
+.auth-tabs a { display: grid; place-items: center; min-height: 40px; border-radius: 10px; font-weight: 700; font-size: .92rem; color: var(--muted); text-decoration: none; transition: background .15s, color .15s; }
+.auth-tabs a.on { background: var(--brand); color: #fff; box-shadow: 0 4px 12px rgba(108, 76, 241, .3); }
+@media (hover: hover) { .auth-tabs a:not(.on):hover { color: var(--ink); } }
+.auth-lead { margin: 0 0 14px; font-size: .88rem; color: var(--ink-2); }
+.auth-card .field input { min-height: 48px; font-size: 1rem; transition: border-color .15s, box-shadow .15s; }
+.auth-card .field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.auth-card .btn.block { min-height: 50px; font-size: 1rem; margin-top: 4px; }
+.auth-card .hint-box { display: flex; gap: 10px; align-items: flex-start; }
+.auth-card .hint-box > .ic { color: var(--brand); flex: none; margin-top: 2px; }
+.auth-card .pw-eye { color: var(--muted); }
+.auth-card .check.consent { margin: 4px 0 14px; }
+.auth-card .check.consent span { color: var(--ink-2); line-height: 1.5; }
+.auth-switch { margin: 16px 0 0; text-align: center; font-size: .86rem; color: var(--muted); }
+.auth-switch a { font-weight: 700; color: var(--brand); text-decoration: none; }
+.auth-note { display: flex; gap: 6px; align-items: flex-start; justify-content: center; max-width: 440px; margin: 16px 0 0; font-size: .78rem; color: var(--muted); text-align: center; }
+.auth-note .ic { flex: none; margin-top: 2px; }
+@media (min-width: 900px) {
+  .auth { flex-direction: row; }
+  .auth-side { width: 44%; max-width: 560px; flex: none; border-radius: 0 32px 32px 0; padding: 32px 44px; display: flex; flex-direction: column; gap: 36px; }
+  .auth-intro { margin-top: auto; }
+  .auth-intro h1 { font-size: 2.1rem; margin-top: 0; }
+  .auth-intro .sub { font-size: 1rem; }
+  .auth-points { display: grid; gap: 16px; margin-bottom: auto; }
+  .auth-main { justify-content: center; padding: 40px 32px; }
+  .auth-card { margin-top: 0; padding: 28px; }
+}
 .pw { position: relative; }
 .pw input { padding-right: 52px; }
 .pw-eye { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 44px; height: 40px; border: 0; background: transparent; border-radius: 10px; font-size: 1.05rem; }
@@ -102,6 +147,25 @@
 .gnote-ask .ic { flex: none; margin-top: 2px; color: var(--brand); }
 .gnote-ask b { color: var(--ink); }
 .gnote-disc { margin: 0; font-size: .72rem; color: var(--muted); }
+/* Chụp máy đo: AI đọc số → màn xác nhận chữ to, một chạm "Đúng, lưu lại" */
+.glu-cam { margin-top: 10px; }
+.meter-cam { min-height: 58px; font-size: 1.08rem; }
+.meter-hint { margin: 6px 2px 0; text-align: center; }
+.meter-or { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; color: var(--muted); font-size: .82rem; }
+.meter-or::before, .meter-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.meter-shot { display: block; width: 100%; max-height: 180px; object-fit: contain; border-radius: var(--r-sm); background: var(--card-2); margin-bottom: 12px; }
+.meter-wait { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 14px 0; font-weight: 600; color: var(--ink-2); }
+.meter-read { display: grid; justify-items: center; gap: 2px; padding: 14px 12px; border-radius: 18px; background: var(--brand-soft); text-align: center; }
+.meter-kind { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--brand); font-size: .95rem; }
+.meter-num { font-size: 3.2rem; line-height: 1.05; font-weight: 800; color: var(--ink); letter-spacing: -.01em; }
+.meter-num small { font-size: 2.2rem; font-weight: 700; margin: 0 2px; color: var(--ink-2); }
+.meter-unit { font-weight: 700; color: var(--ink-2); }
+.meter-warn { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 0; padding: 8px 10px; border-radius: 12px; background: var(--warn-soft); font-size: .88rem; line-height: 1.45; }
+.meter-warn .ic { flex: none; margin-top: 2px; color: var(--warn); }
+.meter-ask { margin: 14px 0 8px; text-align: center; font-weight: 700; }
+.meter-ok { min-height: 58px; font-size: 1.12rem; }
+.meter-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.alert.warn { background: var(--warn-soft); } .alert.warn .ico { background: var(--warn); }
 .qr-more { margin: 12px 0; }
 .qr-more summary { cursor: pointer; color: var(--brand); font-weight: 600; font-size: .92rem; }
 

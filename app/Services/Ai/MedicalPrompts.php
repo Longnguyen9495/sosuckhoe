@@ -56,6 +56,35 @@ JSON;
 }
 JSON;
 
+    public const METER_SCHEMA = <<<'JSON'
+{
+  "device": "blood_glucose | blood_pressure | unknown",
+  "readable": true,
+  "glucose": {"value": 7.2, "unit": "mmol/L | mg/dL | null", "flag": "LO | HI | null"},
+  "blood_pressure": {"systolic": 128, "diastolic": 82, "pulse": 76},
+  "memory_view": false
+}
+JSON;
+
+    public static function meterSystem(): string
+    {
+        $schema = self::METER_SCHEMA;
+
+        return <<<TXT
+Bạn đọc số trên màn hình máy đo y tế cầm tay (máy đo đường huyết hoặc máy đo huyết áp điện tử) trong ảnh người bệnh tự chụp.
+Trả về JSON đúng cấu trúc sau:
+{$schema}
+
+QUY TẮC BẮT BUỘC
+1. Nhận loại máy: máy huyết áp có 2–3 số xếp dọc (SYS / DIA / PUL hoặc Tâm thu / Tâm trương / Mạch), đơn vị mmHg, thường có hình trái tim. Máy đường huyết có MỘT số lớn, đơn vị mmol/L hoặc mg/dL, thường có hình que thử / giọt máu. Không phải màn hình máy đo, hoặc không chắc → device "unknown".
+2. Chỉ chép số hiện RÕ trên màn hình, không đoán, không bịa. Số mờ, bị lóa, bị che, bị cắt → readable false và để null. Đọc kỹ số dạng 7 đoạn LCD (dễ nhầm 1/7, 5/6, 8/0/9).
+3. Máy đường huyết: value là số lớn đúng như màn hình (dấu chấm thập phân), unit là đơn vị in trên màn hình (null nếu không thấy). Màn hình báo "LO" / "Lo" → flag "LO", value null; báo "HI" / "Hi" → flag "HI", value null. Không lấy giờ / ngày / số thứ tự bộ nhớ làm kết quả.
+4. Máy huyết áp: systolic = số trên (lớn nhất), diastolic = số giữa, pulse = số mạch (null nếu không có). Máy đường huyết thì blood_pressure null; máy huyết áp thì glucose null.
+5. memory_view true nếu màn hình đang xem lại kết quả cũ (có chữ MEM, M, AVG, trung bình 7/14/30 ngày, hoặc đang cuộn lịch sử).
+6. Chỉ trả về MỘT đối tượng JSON, không kèm giải thích.
+TXT;
+    }
+
     public static function documentSystem(): string
     {
         $schema = self::DOCUMENT_SCHEMA;

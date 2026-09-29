@@ -1,11 +1,11 @@
 /** Màn "Hôm nay": đường huyết, thực đơn + bài tập của ngày, dấu hiệu bất thường, ghi chú; bảng ghi chỉ số nhanh (nút +). */
-import { api } from '../core/api.js';
+import { api, apiUpload } from '../core/api.js';
 import { todayVN, addDays, dm, longDate, parseDate, WD, vn, parseNum, nowTimeVN, diffDays, greeting } from '../core/format.js';
 import { esc, delegate, skeleton, errorBox } from '../ui/dom.js';
 import { openSheet, closeSheet, toast, confirmDialog } from '../ui/shell.js';
 import { icon } from '../ui/icons.js';
 import { EVENT_META, POINTS, GLUCOSE_POINTS, SYMPTOMS, levelChip, readingText, readingLevel, exerciseCard, playVideo, weeklyMenu, menuRows, menuIndex, nextMeal, WEEKDAYS, blockHead, sumTile } from './common.js';
-import { generateCarePlan } from './upload.js';
+import { generateCarePlan, prepareImage } from './upload.js';
 
 export async function renderToday(ctx, params = {}) {
     const today = todayVN();
@@ -33,6 +33,7 @@ export async function renderToday(ctx, params = {}) {
                         <button class="btn" type="submit">Lưu</button>
                     </form>
                     <div class="small muted glu-point" id="glu-point" aria-live="polite"></div>
+                    <label class="btn ghost block glu-cam">${meterCamInput()}${icon('camera', { size: 18 })} Chụp máy đo thay vì gõ</label>
                     <div id="readings-card"></div>
                     <div id="glu-note" aria-live="polite"></div>
                 </div>
@@ -334,6 +335,12 @@ export async function renderToday(ctx, params = {}) {
     screen.querySelector('#glu-time').addEventListener('input', drawGluPoint);
 
     screen.addEventListener('change', async (event) => {
+        if (event.target.matches('[data-meter-cam]')) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (file) openQuickReading(ctx, { file });
+            return;
+        }
         const box = event.target.closest('[data-sym]');
         if (box) {
             const set = new Set(day.day_log.symptoms);
@@ -375,21 +382,33 @@ export function guessGlucosePoint(items, time) {
     return 'bedtime';
 }
 
-/** Nút +: ghi đường huyết chỉ bằng một con số; huyết áp để trong mục mở thêm. */
-export async function openQuickReading(ctx) {
+/** Ô chọn ảnh mở thẳng camera sau (điện thoại); máy tính thì mở hộp chọn file. */
+export const meterCamInput = (attr = 'data-meter-cam') => `<input type="file" accept="image/*" capture="environment" ${attr} hidden>`;
+
+const HYPO_TEXT = 'Ăn ngay 15 g đường nhanh (3–4 viên đường hoặc 150 ml nước cam), đo lại sau 15 phút. Lơ mơ, không tỉnh: gọi 115.';
+
+/**
+ * Nút +: chụp màn hình máy đo (AI đọc số, người bệnh xác nhận rồi mới lưu) hoặc gõ số đường huyết;
+ * huyết áp gõ tay để trong mục mở thêm. opts.file: ảnh đã chọn sẵn (bấm "Chụp máy đo" ở màn Hôm nay / menu +).
+ */
+export async function openQuickReading(ctx, opts = {}) {
     if (!ctx.patient) return;
     const today = todayVN();
     const date = ctx.store.get('date') || today;
     const pid = ctx.patient.id;
-    let items = [];
-    try {
-        items = (await api(`/patients/${pid}/day/${date}`)).data.items;
-    } catch (_e) { /* vẫn cho nhập */ }
     const isToday = date === today;
-    const pointText = (t) => (t ? `Tính là: ${POINTS[guessGlucosePoint(items, t)]} · lúc ${t}${isToday ? '' : ` · ngày ${date.split('-').reverse().join('/')}`}` : 'Nhập giờ đo.');
     const startTime = isToday ? nowTimeVN() : '07:00';
+    let items = [];
+    const dayText = isToday ? ' hôm nay' : ` · ngày ${date.split('-').reverse().join('/')}`;
+    const pointText = (t) => (t ? `Tính là: ${POINTS[guessGlucosePoint(items, t)]} · lúc ${t}${isToday ? '' : dayText}` : 'Nhập giờ đo.');
 
-    const sheet = openSheet(`<h3>Ghi đường huyết</h3>
+    const sheet = openSheet(`<h3>Ghi chỉ số</h3>
+        <div id="qr-cam-box">
+            <label class="btn block meter-cam">${meterCamInput('id="qr-cam"')}${icon('camera', { size: 22 })} Chụp màn hình máy đo</label>
+            <p class="small muted meter-hint">Máy đường huyết hoặc máy huyết áp — app tự đọc số, bạn chỉ cần xem lại.</p>
+            <div class="meter-or"><span>hoặc gõ số</span></div>
+        </div>
+        <div id="qr-scan" hidden></div>
         <form id="qr" novalidate>
             <div class="glu-form">
                 <div class="field"><label for="qr-time">Giờ đo</label><input id="qr-time" class="glu-time" type="time" required value="${startTime}"></div>
@@ -405,21 +424,106 @@ export async function openQuickReading(ctx) {
             </details>
             <button class="btn block" type="submit">Lưu</button>
         </form>`);
-    sheet.querySelector('#qr-g').focus();
-    sheet.querySelector('#qr-time').addEventListener('input', (event) => { sheet.querySelector('#qr-point').textContent = pointText(event.target.value); });
+    const $ = (sel) => sheet.querySelector(sel);
+    const form = $('#qr');
+    const scanBox = $('#qr-scan');
+    const updatePoint = () => { $('#qr-point').textContent = pointText($('#qr-time').value); };
+    $('#qr-time').addEventListener('input', updatePoint);
+    // Lịch trong ngày chỉ để đoán thời điểm đo (lúc đói, sau ăn…) — tải sau, không chặn mở bảng / chụp ảnh.
+    const itemsReady = api(`/patients/${pid}/day/${date}`).then((r) => { items = r.data.items || []; updatePoint(); }).catch(() => { /* vẫn cho nhập */ });
 
-    sheet.querySelector('#qr').addEventListener('submit', async (event) => {
+    /* ----- Chụp máy đo → AI đọc → màn xác nhận (chưa lưu gì cho tới khi bấm "Đúng, lưu lại") ----- */
+    let photoUrl = null;
+    let read = null;
+    const showManual = (on) => { form.hidden = !on; $('#qr-cam-box').hidden = !on; scanBox.hidden = on; };
+    const retakeBtns = `<div class="meter-acts">
+        <label class="btn ghost">${meterCamInput('data-retake')}${icon('camera', { size: 18 })} Chụp lại</label>
+        <button type="button" class="btn ghost" data-act="type">Gõ số</button></div>`;
+    const setFields = (r) => {
+        const g = r.device === 'blood_glucose' ? r.glucose : null;
+        const bp = r.device === 'blood_pressure' ? r.blood_pressure : null;
+        $('#qr-g').value = g ? vn(g.value) : '';
+        $('#qr-sys').value = bp ? bp.systolic : '';
+        $('#qr-dia').value = bp ? bp.diastolic : '';
+        $('#qr-hr').value = bp?.heart_rate ?? '';
+        $('.qr-more').open = Boolean(bp);
+    };
+
+    async function scan(file) {
+        if (!file) return;
+        if (photoUrl) URL.revokeObjectURL(photoUrl);
+        photoUrl = URL.createObjectURL(file);
+        read = null;
+        showManual(false);
+        const shot = `<img class="meter-shot" src="${photoUrl}" alt="Ảnh máy đo vừa chụp">`;
+        scanBox.innerHTML = `${shot}<p class="meter-wait"><span class="spin"></span> Đang đọc số trên máy…</p>`;
+        let r;
+        try {
+            const fd = new FormData();
+            fd.append('image', await prepareImage(file, 1600));
+            r = (await apiUpload(`/patients/${pid}/meter-read`, fd)).data;
+            await itemsReady;
+        } catch (error) {
+            const msg = navigator.onLine === false ? 'Cần có mạng để đọc ảnh. Bạn gõ số giúp nhé.'
+                : error.status === 503 ? (error.payload?.message || 'Chưa đọc được ảnh lúc này. Bạn gõ số giúp nhé.')
+                : (error.message || 'Chưa đọc được ảnh.');
+            scanBox.innerHTML = `${shot}<div class="alert warn"><div class="ico">${icon('warn', { size: 18 })}</div><div><b>${esc(msg)}</b></div></div>${retakeBtns}`;
+            return;
+        }
+        if (!sheet.isConnected || scanBox.hidden) return; // Đã đóng bảng / chuyển sang gõ tay trong lúc chờ.
+
+        if (r.flag === 'LO' || r.flag === 'HI') {
+            const lo = r.flag === 'LO';
+            scanBox.innerHTML = `${shot}<div class="alert bad"><div class="ico">${icon('warn', { size: 18 })}</div><div>
+                <b>Máy báo ${r.flag}: đường huyết ${lo ? 'rất thấp' : 'rất cao (trên 33 mmol/L)'}</b>
+                <p>${lo ? HYPO_TEXT : 'Uống nước lọc, báo bác sĩ ngay. Mệt lả, lơ mơ, thở nhanh, nôn: gọi 115.'}</p></div></div>
+                <p class="small muted">Máy không hiện con số nên app chưa lưu được. Đo lại sau khi xử trí, hoặc ghi vào mục Ghi chú.</p>${retakeBtns}`;
+            return;
+        }
+        if (!r.device) {
+            scanBox.innerHTML = `${shot}<div class="alert warn"><div class="ico">${icon('info', { size: 18 })}</div><div><b>${esc(r.message || 'Chưa đọc rõ số trên máy.')}</b></div></div>${retakeBtns}`;
+            return;
+        }
+        read = r;
+        const time = $('#qr-time').value;
+        const glu = r.device === 'blood_glucose';
+        const big = glu
+            ? `<span class="meter-kind">${icon('droplet', { size: 18 })} Đường huyết</span><b class="meter-num">${vn(r.glucose.value)}</b><span class="meter-unit">mmol/L</span>`
+            : `<span class="meter-kind">${icon('heart', { size: 18 })} Huyết áp</span><b class="meter-num">${r.blood_pressure.systolic}<small>/</small>${r.blood_pressure.diastolic}</b><span class="meter-unit">mmHg${r.blood_pressure.heart_rate ? ` · mạch ${r.blood_pressure.heart_rate}` : ''}</span>`;
+        const when = glu ? pointText(time).replace(/^Tính là: /, '') : `lúc ${time}${dayText}`;
+        const warns = (r.warnings || []).map((w) => `<p class="meter-warn">${icon('warn', { size: 15 })}<span>${esc(w)}</span></p>`).join('');
+        scanBox.innerHTML = `${shot}
+            <div class="meter-read">${big}<span class="small muted">${esc(when)}</span></div>
+            ${warns}
+            <p class="meter-ask">Số này có đúng với màn hình máy không?</p>
+            <button type="button" class="btn block meter-ok" data-act="ok">${icon('check', { size: 20 })} Đúng, lưu lại</button>
+            <div class="meter-acts">
+                <button type="button" class="btn ghost" data-act="edit">Sửa số</button>
+                <label class="btn ghost">${meterCamInput('data-retake')}${icon('camera', { size: 18 })} Chụp lại</label></div>`;
+    }
+
+    $('#qr-cam').addEventListener('change', (e) => scan(e.target.files[0]));
+    scanBox.addEventListener('change', (e) => { if (e.target.matches('[data-retake]')) scan(e.target.files[0]); });
+    delegate(scanBox, {
+        ok: () => { setFields(read); form.requestSubmit(); },
+        edit: () => { setFields(read); showManual(true); $(read.device === 'blood_pressure' ? '#qr-sys' : '#qr-g').focus(); },
+        type: () => { showManual(true); $('#qr-g').focus(); },
+    });
+
+    form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const timeInput = sheet.querySelector('#qr-time');
+        const timeInput = $('#qr-time');
         const time = timeInput.value;
-        if (!time) { timeInput.focus(); return toast('Nhập giờ đo, ví dụ 07:30.', 'bad'); }
-        if (isToday && time > nowTimeVN()) { timeInput.focus(); return toast('Giờ đo chưa tới — kiểm tra lại giờ.', 'bad'); }
+        if (!time) { showManual(true); timeInput.focus(); return toast('Nhập giờ đo, ví dụ 07:30.', 'bad'); }
+        if (isToday && time > nowTimeVN()) { showManual(true); timeInput.focus(); return toast('Giờ đo chưa tới — kiểm tra lại giờ.', 'bad'); }
         const measuredAt = `${date} ${time}:00`;
-        const g = parseNum(sheet.querySelector('#qr-g').value);
-        const sys = parseInt(sheet.querySelector('#qr-sys').value, 10);
-        const dia = parseInt(sheet.querySelector('#qr-dia').value, 10);
-        const hr = parseInt(sheet.querySelector('#qr-hr').value, 10);
+        const g = parseNum($('#qr-g').value);
+        const sys = parseInt($('#qr-sys').value, 10);
+        const dia = parseInt($('#qr-dia').value, 10);
+        const hr = parseInt($('#qr-hr').value, 10);
         if (g === null && !(sys && dia)) return toast('Nhập số đường huyết, ví dụ 6,5.', 'bad');
+        const buttons = sheet.querySelectorAll('[type=submit], [data-act=ok]');
+        buttons.forEach((b) => { b.disabled = true; });
         const alerts = [];
         try {
             if (g !== null) {
@@ -431,12 +535,16 @@ export async function openQuickReading(ctx) {
                 const res = await api(`/patients/${pid}/readings`, { method: 'POST', body: { type: 'blood_pressure', context: bpPoint, measured_at: measuredAt, values: { systolic: sys, diastolic: dia, ...(hr ? { heart_rate: hr } : {}) } } });
                 if (res.alert) alerts.push(res.alert);
             }
+            if (photoUrl) URL.revokeObjectURL(photoUrl);
             closeSheet();
             if (alerts.length) toast(alerts.map((a) => a.replace('[NHÁP — CẦN DUYỆT] ', '')).join(' '), 'bad');
             else toast('Đã lưu chỉ số.');
             ctx.refresh();
         } catch (error) {
             toast(error.message, 'bad');
+            buttons.forEach((b) => { b.disabled = false; });
         }
     });
+
+    if (opts.file) scan(opts.file);
 }

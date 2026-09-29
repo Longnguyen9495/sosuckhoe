@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\DocumentUploadController;
 use App\Http\Controllers\Api\V1\DrugController;
 use App\Http\Controllers\Api\V1\GlucoseNoteController;
 use App\Http\Controllers\Api\V1\InvitationController;
+use App\Http\Controllers\Api\V1\MeterReadController;
 use App\Http\Controllers\Api\V1\ShareLinkController;
 use App\Http\Controllers\Api\V1\SharedViewController;
 use App\Http\Controllers\Api\V1\LabResultController;
@@ -124,6 +125,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/patients/{patient}/readings', [PatientDayController::class, 'readingsIndex'])->name('patients.readings.index');
         Route::post('/patients/{patient}/readings', [PatientDayController::class, 'storeReading'])->name('patients.readings.store');
+        Route::post('/patients/{patient}/meter-read', MeterReadController::class)->middleware('throttle:20,1')->name('patients.meter-read');
         Route::get('/patients/{patient}/glucose-note/{date}', [GlucoseNoteController::class, 'show'])->name('patients.glucose-note.show');
         Route::post('/patients/{patient}/glucose-note/{date}', [GlucoseNoteController::class, 'store'])->middleware('throttle:20,1')->name('patients.glucose-note.store');
 

@@ -4,6 +4,7 @@ namespace App\Services\Ai;
 
 use App\Contracts\AiOcrClient;
 use App\Contracts\MedicalAiClient;
+use App\Contracts\MeterAiClient;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -14,7 +15,7 @@ use RuntimeException;
  * Gọi API tương thích OpenAI Chat Completions (base_url + api_key + model trong config/services.php → ai).
  * Không ghi nội dung ảnh hay kết quả y tế vào log; chỉ ghi mã lỗi.
  */
-final class OpenAiCompatibleClient implements MedicalAiClient, AiOcrClient
+final class OpenAiCompatibleClient implements MedicalAiClient, AiOcrClient, MeterAiClient
 {
     public function __construct(
         private readonly string $baseUrl,
@@ -40,6 +41,19 @@ final class OpenAiCompatibleClient implements MedicalAiClient, AiOcrClient
             ['role' => 'system', 'content' => MedicalPrompts::documentSystem()],
             ['role' => 'user', 'content' => [
                 ['type' => 'text', 'text' => 'Đọc ảnh giấy tờ y tế sau và trả về JSON theo đúng cấu trúc đã mô tả.'],
+                ['type' => 'image_url', 'image_url' => ['url' => $dataUrl, 'detail' => 'high']],
+            ]],
+        ]);
+    }
+
+    public function readMeter(string $binary, string $mime): array
+    {
+        $dataUrl = 'data:'.$mime.';base64,'.base64_encode($binary);
+
+        return $this->chatJson([
+            ['role' => 'system', 'content' => MedicalPrompts::meterSystem()],
+            ['role' => 'user', 'content' => [
+                ['type' => 'text', 'text' => 'Đọc số trên màn hình máy đo trong ảnh và trả về JSON theo đúng cấu trúc đã mô tả.'],
                 ['type' => 'image_url', 'image_url' => ['url' => $dataUrl, 'detail' => 'high']],
             ]],
         ]);

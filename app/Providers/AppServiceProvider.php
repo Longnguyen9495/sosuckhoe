@@ -10,8 +10,10 @@ use App\Contracts\ZaloZnsSender;
 use App\Models\Document;
 use App\Policies\DocumentPolicy;
 use App\Contracts\MedicalAiClient;
+use App\Contracts\MeterAiClient;
 use App\Services\Ai\FakeAiOcrClient;
 use App\Services\Ai\FakeMedicalAiClient;
+use App\Services\Ai\FakeMeterAiClient;
 use App\Services\Ai\OpenAiCompatibleClient;
 use App\Services\Otp\FakeOtpSender;
 use App\Services\Push\FakePushNotifier;
@@ -68,6 +70,13 @@ class AppServiceProvider extends ServiceProvider
                 'fake' => new FakeAiOcrClient(),
                 'openai' => app(OpenAiCompatibleClient::class),
                 default => throw new InvalidArgumentException('Unsupported AI OCR driver.'),
+            };
+        });
+        $this->app->bind(MeterAiClient::class, function (): MeterAiClient {
+            return match (config('services.ai.driver', 'fake')) {
+                'fake' => new FakeMeterAiClient(),
+                'openai' => app(OpenAiCompatibleClient::class),
+                default => throw new InvalidArgumentException('Unsupported AI driver.'),
             };
         });
         $this->app->bind(ZaloZnsSender::class, function (): ZaloZnsSender {

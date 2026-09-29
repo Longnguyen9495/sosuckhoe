@@ -13,11 +13,11 @@ const TYPE_LABEL = { don: 'Đơn thuốc', xn: 'Xét nghiệm', cdha: 'Chẩn đ
 const MAX_SIDE = 2200;
 
 /** Vẽ lại ảnh: xoay đúng chiều theo EXIF, thu nhỏ, xuất JPEG — metadata bị loại bỏ. */
-async function prepareImage(file) {
+export async function prepareImage(file, maxSide = MAX_SIDE) {
     if (!file.type.startsWith('image/') || file.type === 'image/gif') return file;
     try {
         const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-        const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+        const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(bitmap.width * scale);
         canvas.height = Math.round(bitmap.height * scale);

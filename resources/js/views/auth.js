@@ -9,18 +9,33 @@ import { icon } from '../ui/icons.js';
 import { toast, openSheet, closeSheet } from '../ui/shell.js';
 import { FEATURES } from '../core/features.js';
 
-function authShell(ctx, inner, { title = 'Sổ theo dõi điều trị tại nhà', sub = 'Lịch thuốc, chỉ số và tái khám — theo đúng đơn bác sĩ.' } = {}) {
-    ctx.root.className = 'app';
+const AUTH_POINTS = [
+    ['pill', 'Nhắc uống thuốc đúng giờ, đúng liều'],
+    ['heart', 'Ghi đường huyết, huyết áp — xem xu hướng từng ngày'],
+    ['camera', 'Chụp giấy khám, AI đọc và lập lịch giúp'],
+    ['shield', 'Dữ liệu riêng tư, không lưu số CCCD / BHYT'],
+];
+
+/** Khung chung: bảng tím thương hiệu + thẻ form. `tab` = 'login' | 'start' thì hiện nút chuyển Đăng nhập / Tạo mới. */
+function authShell(ctx, inner, { title = 'Sổ theo dõi điều trị tại nhà', sub = 'Lịch thuốc, chỉ số và tái khám — theo đúng đơn bác sĩ.', tab = '' } = {}) {
+    ctx.root.className = 'app auth-app';
+    const tabLink = (key, href, label) => `<a href="${href}"${tab === key ? ' class="on" aria-current="page"' : ''}>${label}</a>`;
+    const tabs = tab ? `<nav class="auth-tabs" aria-label="Chọn thao tác">${tabLink('login', '#/login', 'Đăng nhập')}${tabLink('start', '#/start', 'Tạo sổ mới')}</nav>` : '';
     ctx.root.innerHTML = `<div class="auth">
-        <header class="hero">
-            <div class="topbar"><a class="brand-mark grow" href="#/"><span class="avatar">S</span>Sổ Sức Khỏe</a><a class="icon-btn" href="#/" aria-label="Về trang giới thiệu" title="Trang giới thiệu">✕</a></div>
-            <h1>${esc(title)}</h1>
-            <p class="sub">${esc(sub)}</p>
-        </header>
-        <div class="card">${inner}</div>
-        <p class="small muted center" style="padding:0 24px">Ứng dụng không thay thế tư vấn, chẩn đoán hay quyết định điều trị của bác sĩ.</p>
+        <aside class="auth-side">
+            <div class="topbar"><a class="brand-mark grow" href="#/"><span class="avatar">S</span>Sổ Sức Khỏe</a><a class="icon-btn" href="#/" aria-label="Về trang giới thiệu" title="Trang giới thiệu">${icon('close', { size: 20 })}</a></div>
+            <div class="auth-intro">
+                <h1>${esc(title)}</h1>
+                <p class="sub">${esc(sub)}</p>
+            </div>
+            <ul class="auth-points">${AUTH_POINTS.map(([ic, text]) => `<li><span>${icon(ic, { size: 18 })}</span>${esc(text)}</li>`).join('')}</ul>
+        </aside>
+        <main class="auth-main">
+            <div class="auth-card">${tabs}${inner}</div>
+            <p class="auth-note">${icon('info', { size: 14 })}<span>Ứng dụng không thay thế tư vấn, chẩn đoán hay quyết định điều trị của bác sĩ.</span></p>
+        </main>
     </div>`;
-    return ctx.root.querySelector('.card');
+    return ctx.root.querySelector('.auth-card');
 }
 
 /** Giống DefaultPassword (PHP): tên bỏ dấu, bỏ khoảng trắng, chữ thường + 4 số cuối SĐT. */
@@ -59,16 +74,15 @@ export function renderLogin(ctx) {
     const remembered = ctx.store.get('loginPhone') || '';
     const card = authShell(ctx, `
         <form id="login-form" novalidate>
-            <h3>Đăng nhập</h3>
             <div class="field">
                 <label for="phone">Số điện thoại</label>
                 <input id="phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="VD 0912345678" value="${esc(remembered)}" required>
             </div>
             ${passwordField()}
-            <p class="hint-box">Mật khẩu mặc định là <b>tên viết liền, không dấu</b> + <b>4 số cuối</b> số điện thoại.<br>VD: Nguyễn Văn An, 0912 34<b>5678</b> → <code>nguyenvanan5678</code></p>
+            <p class="hint-box">${icon('key', { size: 16 })}<span>Mật khẩu mặc định là <b>tên viết liền, không dấu</b> + <b>4 số cuối</b> số điện thoại.<br>VD: Nguyễn Văn An, 0912 34<b>5678</b> → <code>nguyenvanan5678</code></span></p>
             <button class="btn block" type="submit">Đăng nhập</button>
-            <p class="center small" style="margin:14px 0 0">Chưa có sổ sức khỏe? <a href="#/start"><b>Tạo mới</b></a></p>
-        </form>`, { title: 'Chào mừng trở lại', sub: 'Đăng nhập bằng số điện thoại và mật khẩu.' });
+            <p class="auth-switch">Chưa có sổ sức khỏe? <a href="#/start">Tạo mới</a></p>
+        </form>`, { title: 'Chào mừng trở lại', sub: 'Đăng nhập bằng số điện thoại và mật khẩu.', tab: 'login' });
 
     const form = card.querySelector('#login-form');
     togglePw(card);
@@ -96,8 +110,7 @@ export function renderLogin(ctx) {
 export function renderStart(ctx) {
     const card = authShell(ctx, `
         <form id="start-form" novalidate>
-            <h3>Thông tin cá nhân</h3>
-            <p class="small ink2" style="margin-top:0">Chỉ 3 thông tin — không cần mã OTP.</p>
+            <p class="auth-lead">Chỉ 3 thông tin — không cần mã OTP.</p>
             <div class="field">
                 <label for="name">Họ và tên</label>
                 <input id="name" name="name" autocomplete="name" placeholder="VD: Nguyễn Văn An" maxlength="120" required>
@@ -111,10 +124,10 @@ export function renderStart(ctx) {
                 <input id="birth_date" name="birth_date" type="date" max="${new Date().toISOString().slice(0, 10)}" min="1900-01-01" required>
             </div>
             <div class="pw-preview" id="pw-preview" hidden>Mật khẩu của bạn sẽ là <code id="pw-value"></code><span class="small muted"> — đổi được sau trong mục Thông tin cá nhân.</span></div>
-            <label class="check"><input type="checkbox" id="accepted"><span class="small">Tôi đồng ý để Sổ Sức Khỏe lưu và xử lý dữ liệu sức khỏe của tôi (kể cả dùng AI đọc ảnh giấy tờ khám bệnh) theo <a href="#" data-act="terms">điều khoản</a>. Số CCCD và mã BHYT không được lưu.</span></label>
+            <label class="check consent"><input type="checkbox" id="accepted"><span class="small">Tôi đồng ý để Sổ Sức Khỏe lưu và xử lý dữ liệu sức khỏe của tôi (kể cả dùng AI đọc ảnh giấy tờ khám bệnh) theo <a href="#" data-act="terms">điều khoản</a>. Số CCCD và mã BHYT không được lưu.</span></label>
             <button class="btn block" type="submit">Tạo sổ sức khỏe</button>
-            <p class="center small" style="margin:14px 0 0">Đã có tài khoản? <a href="#/login"><b>Đăng nhập</b></a></p>
-        </form>`, { title: 'Tạo sổ sức khỏe', sub: 'Mất chưa tới 1 phút.' });
+            <p class="auth-switch">Đã có tài khoản? <a href="#/login">Đăng nhập</a></p>
+        </form>`, { title: 'Tạo sổ sức khỏe', sub: 'Mất chưa tới 1 phút — bắt đầu theo dõi điều trị tại nhà.', tab: 'start' });
 
     const form = card.querySelector('#start-form');
     form.name.focus();

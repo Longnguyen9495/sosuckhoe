@@ -17,7 +17,7 @@ import { renderLanding } from './views/landing.js';
 import { renderShared } from './views/shared.js';
 import { renderUpload, renderReview } from './views/upload.js';
 import { renderMe } from './views/me.js';
-import { renderToday, openQuickReading } from './views/today.js';
+import { renderToday, openQuickReading, meterCamInput } from './views/today.js';
 import { renderCalendar } from './views/calendar.js';
 import { renderPlan } from './views/plan.js';
 import { renderRecords } from './views/records.js';
@@ -160,8 +160,15 @@ async function logout(callApi = true) {
 /* ---------------- Nút + giữa thanh tab: tải ảnh hoặc ghi chỉ số ---------------- */
 function openFabMenu() {
     const sheet = openSheet(`<div id="fab-menu"><h3>Bạn muốn làm gì?</h3>
-        <button class="choice" data-act="upload"><span class="avatar">${icon('camera', { size: 20 })}</span><span class="grow"><b>Tải ảnh khám bệnh</b><br><span class="small muted">Đơn thuốc, xét nghiệm, giấy khám — AI đọc giúp</span></span></button>
-        <button class="choice" data-act="reading"><span class="avatar">${icon('droplet', { size: 20 })}</span><span class="grow"><b>Ghi đường huyết</b><br><span class="small muted">Chỉ cần gõ số, VD 6,5</span></span></button></div>`);
+        <label class="choice">${meterCamInput('data-fab-meter')}<span class="avatar">${icon('camera', { size: 20 })}</span><span class="grow"><b>Chụp máy đo</b><br><span class="small muted">Máy đường huyết, máy huyết áp — app tự đọc số</span></span></label>
+        <button class="choice" data-act="reading"><span class="avatar">${icon('droplet', { size: 20 })}</span><span class="grow"><b>Gõ số đo</b><br><span class="small muted">Đường huyết VD 6,5 — hoặc huyết áp</span></span></button>
+        <button class="choice" data-act="upload"><span class="avatar">${icon('file', { size: 20 })}</span><span class="grow"><b>Tải ảnh khám bệnh</b><br><span class="small muted">Đơn thuốc, xét nghiệm, giấy khám — AI đọc giúp</span></span></button></div>`);
+    sheet.querySelector('[data-fab-meter]').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        closeSheet();
+        openQuickReading(ctx, { file });
+    });
     delegate(sheet.querySelector('#fab-menu'), {
         upload: () => { closeSheet(); router.navigate('/upload'); },
         reading: () => { closeSheet(); openQuickReading(ctx); },

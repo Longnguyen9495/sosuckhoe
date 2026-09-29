@@ -245,9 +245,6 @@
 .contact { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--line); margin-top: 8px; text-decoration: none; color: inherit; min-height: var(--tap); }
 
 /* ============ Đăng nhập / đăng ký ============ */
-.auth { min-height: 100vh; display: flex; flex-direction: column; }
-.auth .hero { padding-bottom: 60px; }
-.auth .card { margin: -40px 16px 16px; }
 .brand-mark { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.3rem; }
 .brand-mark .avatar { width: 40px; height: 40px; font-size: 16px; }
 .choice { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--card-2); margin-bottom: 10px; min-height: 64px; }
